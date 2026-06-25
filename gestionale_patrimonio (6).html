@@ -1,0 +1,1827 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Gestionale Patrimonio &mdash; Cassa del Notariato</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--b1:#1B3A5C;--b2:#2B5BA1;--bp:#EBF1F9;--ve:#1A7A4A;--vp:#E6F4EE;--ro:#B5282A;--rp:#FDEAEA;--ar:#C96B00;--ap:#FEF3E2;--vi:#6B21A8;--vip:#F3E8FF;--te:#2C3E50;--me:#6C7A8D;--bo:#D0D9E4;--bg:#F4F6FA;--wh:#FFF}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--te);font-size:13.5px}
+#app-shell{display:flex;height:100vh;overflow:hidden}
+#sidebar{width:224px;background:var(--b1);color:#fff;display:flex;flex-direction:column;flex-shrink:0;box-shadow:2px 0 8px rgba(0,0,0,.18);z-index:10;overflow-y:auto}
+.logo{padding:16px 14px 12px;border-bottom:1px solid rgba(255,255,255,.12)}
+.logo-s{font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:rgba(255,255,255,.45)}
+.logo-m{font-size:14px;font-weight:700;color:#fff;margin-top:2px}
+.ns{padding:8px 0 4px;border-bottom:1px solid rgba(255,255,255,.08)}
+.nl{font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.35);padding:0 14px 5px}
+.ni{display:flex;align-items:center;gap:8px;padding:8px 14px;cursor:pointer;color:rgba(255,255,255,.72);font-size:13px;font-weight:500;transition:background .12s;border-left:3px solid transparent;white-space:nowrap}
+.ni:hover{background:rgba(255,255,255,.08);color:#fff}
+.ni.active{background:rgba(255,255,255,.13);color:#fff;border-left-color:#6BA7DD}
+.nb{margin-left:auto;background:var(--ro);color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:700}
+.foot{padding:10px 14px;border-top:1px solid rgba(255,255,255,.1);font-size:10.5px;color:rgba(255,255,255,.3);margin-top:auto}
+.foot span{display:block}
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#topbar{height:56px;background:var(--wh);border-bottom:1px solid var(--bo);display:flex;align-items:center;padding:0 20px;gap:12px;flex-shrink:0;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+#topbar h1{font-size:15px;font-weight:700;color:var(--b1)}
+.tbr{margin-left:auto;display:flex;align-items:center;gap:10px}
+#sb{border:1px solid var(--bo);border-radius:6px;padding:6px 10px;font-size:13px;width:230px;outline:none;background:var(--bg)}
+#sb:focus{border-color:var(--b2);background:#fff}
+.bimp{background:var(--b2);color:#fff;border:none;border-radius:6px;padding:7px 12px;font-size:13px;font-weight:600;cursor:pointer}
+.bimp:hover{background:var(--b1)}
+#file-in{display:none}
+#content{flex:1;overflow-y:auto;padding:18px 20px}
+.sec{display:none}.sec.active{display:block}
+.kr{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.kpi{background:var(--wh);border-radius:8px;padding:14px 16px;border:1px solid var(--bo);box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.kpi.c{cursor:pointer;transition:box-shadow .15s,transform .12s}
+.kpi.c:hover{box-shadow:0 4px 16px rgba(27,58,92,.15);transform:translateY(-1px)}
+.kl{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--me);margin-bottom:4px}
+.kv{font-size:22px;font-weight:700;color:var(--te)}
+.ks{font-size:11px;color:var(--me);margin-top:2px}
+.kpi.r .kv{color:var(--ro)}.kpi.g .kv{color:var(--ve)}.kpi.a .kv{color:var(--ar)}.kpi.b .kv{color:var(--b2)}.kpi.v .kv{color:var(--vi)}
+.tw{background:var(--wh);border:1px solid var(--bo);border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+table{width:100%;border-collapse:collapse}
+thead tr{background:var(--bg)}
+th{padding:8px 11px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--me);text-align:left;border-bottom:1px solid var(--bo);white-space:nowrap}
+th.s{cursor:pointer;user-select:none}
+th.s:hover{background:#dde4ef;color:var(--b1)}
+th.sa::after{content:' b2';font-size:9px}
+th.sd::after{content:' bc';font-size:9px}
+td{padding:8px 11px;border-bottom:1px solid #EEF2F7;font-size:13px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tbody tr{cursor:pointer;transition:background .1s}
+tbody tr:hover{background:var(--bp)}
+.badge{display:inline-block;border-radius:20px;padding:2px 9px;font-size:11px;font-weight:700}
+.bi{background:var(--rp);color:var(--ro)}.bs{background:var(--vp);color:var(--ve)}.bc{background:var(--bp);color:var(--b2)}.bn{background:#F0F0F0;color:#888}
+.chs{background:var(--rp);color:var(--ro);border-radius:4px;padding:1px 5px;font-size:10px;font-weight:700}
+.chp{background:var(--ap);color:var(--ar);border-radius:4px;padding:1px 5px;font-size:10px;font-weight:700}
+.chok{background:var(--vp);color:var(--ve);border-radius:4px;padding:1px 5px;font-size:10px;font-weight:700}
+.chv{background:#FFF3E0;color:var(--ar);border-radius:4px;padding:1px 5px;font-size:10px;font-weight:700;margin-left:3px}
+.pos{color:var(--ro);font-weight:700}.neg{color:var(--ve);font-weight:700}.zer{color:var(--ve)}.nda{color:var(--me)}
+.ra{text-align:right}.dim{color:var(--me);font-size:12px}.fw{font-weight:600}.ellip{max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.br{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.bl{width:100px;font-size:12px;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
+.bt{flex:1;background:#E8EDF4;border-radius:3px;height:13px;overflow:hidden}
+.bf{height:100%;border-radius:3px;transition:width .4s}
+.ba{width:80px;font-size:12px;font-weight:700;flex-shrink:0}
+.fbar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.fb{border:1px solid var(--bo);background:var(--wh);border-radius:20px;padding:4px 12px;font-size:12px;cursor:pointer;font-weight:600;color:var(--me);transition:all .12s}
+.fb:hover{border-color:var(--b2);color:var(--b2)}
+.fb.active{background:var(--b2);color:#fff;border-color:var(--b2)}
+#fb-insoluto.active{background:var(--ro);border-color:var(--ro)}
+#fb-saldato.active{background:#5A7A9A;border-color:#5A7A9A}
+#fb-credito.active{background:var(--ve);border-color:var(--ve)}
+#fb-fitto.active{background:var(--ar);border-color:var(--ar)}
+#fb-sfitto.active{background:var(--vi);border-color:var(--vi)}
+.sthd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.stt{font-size:14px;font-weight:700;color:var(--b1)}
+.alst{display:flex;flex-direction:column;gap:8px}
+.ac{background:var(--wh);border:1px solid var(--bo);border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;border-left-width:4px;transition:background .1s}
+.ac:hover{background:var(--bg)}.ac.sc{border-left-color:var(--ro)}.ac.pr{border-left-color:var(--ar)}.ac.sal-f{border-left-color:var(--ve)}
+.ai{font-size:16px;flex-shrink:0}.ab{flex:1}.at{font-weight:700;font-size:13px}.as{font-size:11.5px;color:var(--me);margin-top:1px}
+.aa{font-size:13px;font-weight:700;color:var(--ro);flex-shrink:0}
+.ac.pr .aa{color:var(--ar)}.ac.sal-f .aa{color:var(--ve)}
+.amm-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ammc{background:var(--wh);border:1px solid var(--bo);border-radius:8px;padding:12px 14px;cursor:pointer;transition:box-shadow .1s}
+.ammc:hover{box-shadow:0 2px 10px rgba(27,58,92,.1)}
+.amn{font-weight:700;font-size:13px;color:var(--b1);margin-bottom:5px}
+.amc{font-size:11.5px;color:var(--me);margin-bottom:7px;line-height:1.4}
+.amx{font-size:12px;display:flex;flex-direction:column;gap:2px}
+.amx a{color:var(--b2);text-decoration:none}
+.tt{display:inline-block;border-radius:12px;padding:1px 8px;font-size:10.5px;font-weight:700;background:var(--bp);color:var(--b2);margin:1px}
+.ta{background:#EBF1F9;color:#2B5BA1}.tu{background:var(--vp);color:var(--ve)}.tc{background:var(--vip);color:var(--vi)}.tb{background:var(--ap);color:var(--ar)}.ts{background:#FFF8E1;color:#B8860B}.tn{background:var(--rp);color:var(--ro)}
+.cgridh{display:grid;grid-template-columns:110px 1fr 70px 80px;gap:3px 8px;margin-bottom:6px}
+.crow{display:grid;grid-template-columns:110px 1fr 70px 80px;gap:3px 8px;align-items:center;margin-bottom:4px;cursor:pointer;padding:2px 4px;border-radius:4px}
+.crow:hover{background:var(--bp)}
+.clbl{font-size:12px;font-weight:600;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ctrk{background:#E8EDF4;border-radius:3px;height:13px;overflow:hidden}
+.cbar{height:100%;border-radius:3px;transition:width .4s}
+.cval{font-size:11.5px;font-weight:700;text-align:right}
+.cdov{font-size:11.5px;color:var(--me)}
+.leg{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;margin-right:10px}
+.ldot{width:11px;height:11px;border-radius:2px;display:inline-block}
+.cw{background:var(--wh);border:1px solid var(--bo);border-radius:8px;padding:14px 16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.ch2{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.cn{background:none;border:1px solid var(--bo);border-radius:5px;padding:3px 11px;cursor:pointer;font-size:15px;color:var(--b1);font-weight:700}
+.cn:hover{background:var(--bp)}
+.cm{font-size:14px;font-weight:700;color:var(--b1)}
+.cgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.cdow{font-size:10px;font-weight:700;text-align:center;color:var(--me);text-transform:uppercase;padding:3px 0}
+.cday{min-height:48px;border-radius:5px;padding:3px 4px;border:1px solid transparent;background:var(--bg)}
+.cday.empty{background:transparent;border-color:transparent}
+.cday.today{border-color:var(--b2);background:var(--bp)}
+.cday.hsc{cursor:pointer;background:var(--rp);border-color:var(--ro)}
+.cday.hsc:hover{background:#f8d0d0}
+.cday.hasm{cursor:pointer;background:var(--vip);border-color:var(--vi)}
+.cday.hasm:hover{background:#e8d8f8}
+.cday.hsc.hasm{background:linear-gradient(135deg,var(--rp) 50%,var(--vip) 50%)}
+.cnum{font-weight:700;font-size:11.5px;color:var(--te)}
+.cday.today .cnum{color:var(--b2)}.cday.hsc .cnum{color:var(--ro)}.cday.hasm .cnum{color:var(--vi)}
+.cev{font-size:9px;border-radius:3px;padding:1px 3px;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.csc{background:var(--ro);color:#fff}.casm{background:var(--vi);color:#fff}
+#overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:100}
+#overlay.open{display:block}
+#drawer{position:fixed;top:0;right:-560px;width:540px;height:100vh;background:var(--wh);z-index:101;box-shadow:-4px 0 20px rgba(0,0,0,.15);display:flex;flex-direction:column;transition:right .25s;overflow:hidden}
+#drawer.open{right:0}
+.dhd{padding:16px 20px 12px;border-bottom:1px solid var(--bo);display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0;background:var(--b1)}
+.dhd-ci{font-size:10px;font-weight:700;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.08em}
+.dhd-nm{font-size:14px;font-weight:700;color:#fff;margin-top:2px;line-height:1.3}
+.dcl{background:none;border:none;color:rgba(255,255,255,.65);font-size:19px;cursor:pointer;margin-left:10px;flex-shrink:0}
+.dcl:hover{color:#fff}
+.dbd{flex:1;overflow-y:auto;padding:16px 20px}
+.ds{margin-bottom:16px}
+.dsh{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;border-bottom:1px solid var(--bo);padding-bottom:4px}
+.dst{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--me)}
+.dl{display:grid;grid-template-columns:120px 1fr;gap:5px 10px}
+.dt{font-size:11.5px;color:var(--me);font-weight:600;align-self:center}
+.dd{font-size:13px}
+.ef{border:none;border-bottom:1.5px solid var(--bo);background:transparent;font-size:13px;color:var(--te);padding:2px 3px;width:100%;outline:none;font-family:'Segoe UI',Arial,sans-serif}
+.ef:focus{border-bottom-color:var(--b2);background:#f0f6ff;border-radius:3px 3px 0 0}
+.ef.ch{border-bottom-color:var(--ar)!important;background:var(--ap)!important}
+.efta{width:100%;border:1px solid var(--bo);border-radius:5px;padding:6px 8px;font-size:12.5px;font-family:'Segoe UI',Arial,sans-serif;resize:vertical;outline:none;min-height:80px}
+.efta:focus{border-color:var(--b2)}.efta.ch{border-color:var(--ar);background:var(--ap)}
+.prow{display:flex;gap:8px;margin-bottom:10px}
+.pbox{flex:1;border-radius:7px;padding:10px 12px;text-align:center;border:1px solid var(--bo)}
+.pl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--me);margin-bottom:4px}
+.pv{font-size:17px;font-weight:700}
+.pvinp{font-size:17px;font-weight:700;text-align:center;width:100%;border:none;outline:none;background:transparent}
+.pbox.dov{background:var(--bg)}.pbox.dov .pv,.pbox.dov .pvinp{color:var(--te)}
+.pbox.ver{background:var(--vp)}.pbox.ver .pv,.pbox.ver .pvinp{color:var(--ve)}
+.pbox.rp{background:var(--rp)}.pbox.rp .pv{color:var(--ro)}
+.pbox.rn{background:var(--bp)}.pbox.rn .pv{color:var(--b2)}
+.pbox.rz{background:var(--vp)}.pbox.rz .pv{color:var(--ve)}
+.ci-card{background:var(--wh);border:1px solid var(--bo);border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:background .1s;margin-bottom:8px}
+.ci-card:hover{background:var(--bp)}
+.ci-ico{font-size:18px;flex-shrink:0}.ci-bod{flex:1}
+.ci-t{font-weight:700;font-size:13.5px}.ci-s{font-size:12px;color:var(--me);margin-top:2px}
+.ci-del{background:none;border:1px solid var(--rp);color:var(--ro);border-radius:4px;padding:3px 8px;font-size:11.5px;cursor:pointer}
+.ci-del:hover{background:var(--rp)}
+.cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ccard{background:var(--wh);border:1px solid var(--bo);border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.ccard.filled{border-color:var(--b2)}
+.cchdr{background:var(--b1);padding:10px 14px}
+.cccity{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.55)}
+.cccond{font-size:13px;font-weight:700;color:#fff;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ccf{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 14px}
+.cfg{display:flex;flex-direction:column;gap:2px}
+.cfl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--me)}
+.cfi{border:1px solid var(--bo);border-radius:4px;padding:5px 8px;font-size:12.5px;outline:none;font-family:'Segoe UI',Arial,sans-serif;width:100%}
+.cfi:focus{border-color:var(--b2);background:#f0f6ff}
+.ccbtn{display:block;width:calc(100% - 28px);margin:0 14px 12px;background:none;border:1px solid var(--bo);border-radius:5px;padding:6px;font-size:12px;cursor:pointer;color:var(--b2);font-weight:600;text-align:center}
+.ccbtn:hover{background:var(--bp)}
+#lmap{height:520px;border-radius:8px;border:1px solid var(--bo);overflow:hidden}
+.mci{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;background:var(--wh);border:1px solid var(--bo);cursor:pointer;margin-bottom:6px}
+.mci:hover{background:var(--bp);border-color:var(--b2)}
+.mcn{font-weight:700;font-size:13px;flex:1}.mcc{font-size:11.5px;color:var(--me)}
+.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;display:inline-block}
+.di{background:var(--ro)}.ds2{background:var(--ve)}
+.fp{background:var(--wh);border:1px solid var(--bo);border-radius:8px;padding:16px;margin-bottom:14px}
+.fhdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fg{display:flex;flex-direction:column;gap:3px}
+.fg.full{grid-column:1/-1}
+.fl{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--me)}
+.fi{border:1px solid var(--bo);border-radius:5px;padding:6px 9px;font-size:13px;outline:none;font-family:'Segoe UI',Arial,sans-serif}
+.fi:focus{border-color:var(--b2)}
+.fta{border:1px solid var(--bo);border-radius:5px;padding:6px 9px;font-size:13px;font-family:'Segoe UI',Arial,sans-serif;resize:vertical;min-height:70px;outline:none}
+.fta:focus{border-color:var(--b2)}
+.fbtns{display:flex;gap:8px;margin-top:12px}
+.btn-add{background:var(--b2);color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:12.5px;font-weight:600;cursor:pointer}
+.btn-add:hover{background:var(--b1)}
+.btn-del{background:none;border:1px solid var(--rp);color:var(--ro);border-radius:6px;padding:7px 12px;font-size:12.5px;cursor:pointer}
+.btn-del:hover{background:var(--rp)}
+.btn-rst{font-size:11px;background:none;color:var(--me);border:1px solid var(--bo);border-radius:4px;padding:3px 9px;cursor:pointer}
+.btn-rst:hover{background:var(--bg)}
+.sl{font-size:11px;font-weight:700;text-transform:uppercase;color:var(--me);letter-spacing:.08em;margin-bottom:8px}
+#imp-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:150;align-items:center;justify-content:center}
+#imp-ov.open{display:flex}
+#imp-box{background:var(--wh);border-radius:12px;padding:28px 30px;width:440px;box-shadow:0 8px 40px rgba(0,0,0,.2);text-align:center}
+.dz{border:2px dashed var(--bo);border-radius:10px;padding:24px 18px;cursor:pointer;transition:border-color .2s,background .2s;margin:14px 0}
+.dz:hover,.dz.over{border-color:var(--b2);background:var(--bp)}
+.bc2{background:none;border:1px solid var(--bo);border-radius:6px;padding:6px 16px;font-size:13px;cursor:pointer;color:var(--me);margin-top:12px}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#1e3a52;color:#fff;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.25);transition:transform .3s,opacity .3s;opacity:0;pointer-events:none}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+#toast.ok{background:var(--ve)}
+#toast.err{background:var(--ro)}
+.empty{text-align:center;padding:36px 20px;color:var(--me);font-size:13px}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#C5CDD8;border-radius:10px}
+
+/* LOGIN SCREEN */
+#login-screen{display:flex;position:fixed;inset:0;background:var(--b1);z-index:999;align-items:center;justify-content:center;flex-direction:column}
+.login-box{background:#fff;border-radius:14px;padding:40px 44px;width:380px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center}
+.login-logo{font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--me);margin-bottom:6px}
+.login-title{font-size:22px;font-weight:700;color:var(--b1);margin-bottom:4px}
+.login-sub{font-size:13px;color:var(--me);margin-bottom:28px}
+.login-inp{width:100%;border:2px solid var(--bo);border-radius:8px;padding:12px 14px;font-size:15px;outline:none;font-family:'Segoe UI',Arial,sans-serif;text-align:center;letter-spacing:.15em;margin-bottom:14px}
+.login-inp:focus{border-color:var(--b2)}
+.login-btn{width:100%;background:var(--b2);color:#fff;border:none;border-radius:8px;padding:13px;font-size:15px;font-weight:700;cursor:pointer}
+.login-btn:hover{background:var(--b1)}
+.login-err{color:var(--ro);font-size:13px;margin-top:10px;font-weight:600;display:none}
+.login-footer{margin-top:24px;font-size:11px;color:rgba(255,255,255,.3)}
+/* LOGOUT BTN */
+#btn-logout{background:none;border:1px solid rgba(255,255,255,.25);color:rgba(255,255,255,.6);border-radius:5px;padding:3px 10px;font-size:11.5px;cursor:pointer;margin-left:8px}
+#btn-logout:hover{background:rgba(255,255,255,.1);color:#fff}
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">Cassa del Notariato</div>
+    <div class="login-title">Gestionale Patrimonio</div>
+    <div class="login-sub">Inserisci la password per accedere</div>
+    <input type="password" id="login-pwd" class="login-inp" placeholder="Password">
+    <button class="login-btn" id="login-btn">Accedi</button>
+    <div class="login-err" id="login-err">&#10007; Password errata. Riprova.</div>
+  </div>
+  <div class="login-footer">Cassa Nazionale del Notariato &mdash; Uso interno riservato</div>
+</div>
+
+<!-- APP SHELL (nascosto finché non si effettua il login) -->
+<div id="app-shell" style="display:none">
+
+<nav id="sidebar">
+  <div class="logo"><div class="logo-s">Cassa del Notariato</div><div class="logo-m">Gestionale Patrimonio</div></div>
+  <div class="ns"><div class="nl">Principale</div>
+    <div class="ni active" id="ni-dashboard">&#128202; Dashboard</div>
+    <div class="ni" id="ni-unita">&#127962; Unit&agrave; Immobiliari</div>
+    <div class="ni" id="ni-pagamenti">&#128182; Pagamenti</div>
+    <div class="ni" id="ni-scadenze">&#128276; Scadenze <span class="nb" id="badge-sc"></span></div>
+  </div>
+  <div class="ns"><div class="nl">Analisi</div>
+    <div class="ni" id="ni-costi">&#128200; Analisi Costi</div>
+  </div>
+  <div class="ns"><div class="nl">Anagrafica</div>
+    <div class="ni" id="ni-amministratori">&#128100; Amministratori</div>
+    <div class="ni" id="ni-mappa">&#128205; Vista per Citt&agrave;</div>
+    <div class="ni" id="ni-catastale">&#127963; Dati Catastali</div>
+    <div class="ni" id="ni-inquilini">&#128106; Inquilini</div>
+  </div>
+  <div class="ns"><div class="nl">Gestione</div>
+    <div class="ni" id="ni-assemblee">&#128197; Assemblee</div>
+    <div class="ni" id="ni-tecnico">&#128295; Tecnico</div>
+  </div>
+  <div class="foot">
+    <span id="foot-date">Aggiornato al 23/04/2026</span>
+    <span id="foot-n">67 unit&agrave;</span>
+  </div>
+</nav>
+
+<div id="main">
+  <div id="topbar">
+    <h1 id="ptitle">Dashboard</h1>
+    <div class="tbr">
+      <input type="text" id="sb" placeholder="&#128269; Cerca citt&agrave;, condominio&hellip;">
+      <button class="bimp" id="btn-imp-open">&#11014; Da Excel</button>
+      <button id="btn-logout">Esci</button>
+    </div>
+  </div>
+  <div id="content">
+
+    <div class="sec active" id="s-dashboard">
+      <div class="kr">
+        <div class="kpi b c" id="kpi-tot"><div class="kl">Unit&agrave; totali &#x2197;</div><div class="kv" id="k-tot">0</div><div class="ks">portafoglio</div></div>
+        <div class="kpi r c" id="kpi-ins"><div class="kl">Insoluti &#x2197;</div><div class="kv" id="k-ins-n">0</div><div class="ks" id="k-ins-v">&mdash;</div></div>
+        <div class="kpi g c" id="kpi-sal"><div class="kl">Saldati &#x2197;</div><div class="kv" id="k-sal-n">0</div><div class="ks" id="k-sal-p">&mdash;</div></div>
+        <div class="kpi a c" id="kpi-dv"><div class="kl">Da verificare &#x2197;</div><div class="kv" id="k-dv-n">0</div><div class="ks">richiedono attenzione</div></div>
+      </div>
+      <div class="kr" style="grid-template-columns:1fr 2fr;">
+        <div class="kpi v c" id="kpi-asm"><div class="kl">Assemblee &#x2197;</div><div class="kv" id="k-asm-n">0</div><div class="ks">in programma</div></div>
+        <div class="tw" style="padding:14px 16px"><div class="stt" style="margin-bottom:10px">&#128308; Insoluti per importo</div><div id="ch-ins"></div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div class="cw">
+          <div class="ch2"><button class="cn" id="cal-prev">&#8249;</button><div class="cm" id="cal-l"></div><button class="cn" id="cal-next">&#8250;</button></div>
+          <div class="cgrid" id="cal-g"></div>
+          <div style="margin-top:6px;font-size:10.5px;color:var(--me)">
+            <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:2px;background:var(--ro);display:inline-block"></span>Scadenza</span>
+            <span style="display:inline-flex;align-items:center;gap:4px;margin-left:8px"><span style="width:9px;height:9px;border-radius:2px;background:var(--vi);display:inline-block"></span>Assemblea</span>
+          </div>
+        </div>
+        <div class="tw" style="padding:14px 16px"><div class="stt" style="margin-bottom:10px">&#128202; Distribuzione stati</div><div id="ch-st"></div></div>
+      </div>
+    </div>
+
+    <div class="sec" id="s-unita">
+      <div class="fbar">
+        <button class="fb active" id="fb-all">Tutte</button>
+        <button class="fb" id="fb-insoluto">&#128308; Insoluti</button>
+        <button class="fb" id="fb-saldato">&#128994; Saldati</button>
+        <button class="fb" id="fb-credito">&#128309; Crediti</button>
+        <button class="fb" id="fb-nd">&#9898; N.D.</button>
+        <button class="fb" id="fb-fitto">&#127968; Fitti</button>
+        <button class="fb" id="fb-sfitto">&#128682; Sfitti</button>
+      </div>
+      <div class="tw"><table>
+        <thead><tr>
+          <th>#</th>
+          <th class="s" id="sh-ci">Citt&agrave;</th><th class="s" id="sh-co">Condominio</th>
+          <th class="s" id="sh-un">Unit&agrave;</th><th class="s" id="sh-iq">Inquilino</th>
+          <th class="s" id="sh-ri">Ripartizione</th><th class="s" id="sh-st">Stato</th>
+          <th class="s ra" id="sh-dv">Dovuto</th><th class="s ra" id="sh-re">Residuo</th>
+          <th class="s" id="sh-sc">Scadenza</th>
+        </tr></thead>
+        <tbody id="tb-u"></tbody>
+      </table></div>
+    </div>
+
+    <div class="sec" id="s-pagamenti">
+      <div class="kr" style="grid-template-columns:repeat(3,1fr);margin-bottom:14px">
+        <div class="kpi r"><div class="kl">Totale dovuto</div><div class="kv" id="p-dov">&mdash;</div></div>
+        <div class="kpi g"><div class="kl">Totale versato</div><div class="kv" id="p-ver">&mdash;</div></div>
+        <div class="kpi a"><div class="kl">Residuo netto (calc.)</div><div class="kv" id="p-res">&mdash;</div></div>
+      </div>
+      <div style="font-size:11.5px;color:var(--me);margin-bottom:10px">&#9998; Clicca su una riga per modificare importi dalla scheda laterale</div>
+      <div class="tw"><table>
+        <thead><tr>
+          <th class="s" id="ph-ci">Citt&agrave;</th><th class="s" id="ph-co">Condominio</th>
+          <th class="s" id="ph-iq">Inquilino</th>
+          <th class="s ra" id="ph-dv">Dovuto</th><th class="s ra" id="ph-ve">Versato</th>
+          <th class="s ra" id="ph-re">Residuo (calc.)</th>
+          <th class="s" id="ph-st">Stato</th><th>Data rif.</th>
+        </tr></thead>
+        <tbody id="tb-p"></tbody>
+      </table></div>
+    </div>
+
+    <div class="sec" id="s-scadenze">
+      <div class="sthd" style="margin-bottom:14px">
+        <div class="stt">&#128276; Scadenze</div>
+        <div style="font-size:11.5px;color:var(--me)">Scadute non saldate &middot; In scadenza 90gg &middot; Saldati futuri in verde</div>
+      </div>
+      <div class="alst" id="al-list"></div>
+    </div>
+
+    <div class="sec" id="s-costi">
+      <div class="kr" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px">
+        <div class="kpi b"><div class="kl">Totale dovuto</div><div class="kv" id="c-tot">&mdash;</div></div>
+        <div class="kpi r"><div class="kl">Costo medio/unit&agrave;</div><div class="kv" id="c-med">&mdash;</div></div>
+        <div class="kpi a"><div class="kl">Costo medio/mm</div><div class="kv" id="c-mill">&mdash;</div></div>
+        <div class="kpi g"><div class="kl">Unit&agrave; pi&ugrave; economica</div><div class="kv" id="c-mnc">&mdash;</div><div class="ks" id="c-mnv">&mdash;</div></div>
+      </div>
+      <div class="tw" style="padding:14px 18px;margin-bottom:14px">
+        <div class="stt" style="margin-bottom:5px">&#9878; Indice costo/millesimo (dovuto &divide; mm)</div>
+        <div id="c-leg" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px"></div>
+        <div id="c-chart"></div>
+      </div>
+      <div class="tw"><table>
+        <thead><tr><th>Citt&agrave;</th><th>Condominio</th><th>Tipo</th><th class="ra">mm</th><th class="ra">Dovuto</th><th class="ra">&euro;/mm</th><th>Indice</th><th>vs Media</th></tr></thead>
+        <tbody id="tb-c"></tbody>
+      </table></div>
+    </div>
+
+    <div class="sec" id="s-amministratori">
+      <div class="sthd" style="margin-bottom:14px">
+        <div class="stt">&#128100; Amministratori</div>
+        <input id="amm-q" type="text" placeholder="Cerca&hellip;" style="border:1px solid var(--bo);border-radius:6px;padding:5px 10px;font-size:12.5px;width:200px;outline:none">
+      </div>
+      <div class="amm-grid" id="amm-grid"></div>
+    </div>
+
+    <div class="sec" id="s-mappa">
+      <div class="sthd" style="margin-bottom:14px">
+        <div class="stt">&#128205; Vista per Citt&agrave;</div>
+        <div id="mappa-leg" style="font-size:11.5px"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 260px;gap:16px">
+        <div id="lmap"></div>
+        <div id="mappa-list" style="max-height:520px;overflow-y:auto"></div>
+      </div>
+    </div>
+
+    <div class="sec" id="s-catastale">
+      <div class="sthd" style="margin-bottom:14px">
+        <div class="stt">&#127963; Dati Catastali</div>
+        <div style="font-size:11.5px;color:var(--me)">Salvati su Supabase &mdash; condivisi con i colleghi</div>
+      </div>
+      <div class="kr" id="kpi-tipi" style="margin-bottom:16px;grid-template-columns:repeat(6,1fr)"></div>
+      <div class="cat-grid" id="cat-grid"></div>
+    </div>
+
+    <div class="sec" id="s-inquilini">
+      <div class="sthd" style="margin-bottom:14px">
+        <div class="stt">&#128106; Inquilini</div>
+        <button class="btn-add" id="btn-inq">+ Nuovo inquilino</button>
+      </div>
+      <div class="fp" id="inq-form" style="display:none"></div>
+      <div id="inq-list"></div>
+    </div>
+
+    <div class="sec" id="s-assemblee">
+      <div style="display:grid;grid-template-columns:1fr 340px;gap:16px">
+        <div>
+          <div class="sthd" style="margin-bottom:14px">
+            <div class="stt">&#128197; Assemblee</div>
+            <button class="btn-add" id="btn-asm">+ Nuova</button>
+          </div>
+          <div class="fp" id="asm-form" style="display:none;margin-bottom:14px"></div>
+          <div id="asm-list"></div>
+        </div>
+        <div class="cw">
+          <div class="ch2"><button class="cn" id="asm-cal-prev">&#8249;</button><div class="cm" id="asm-cal-l"></div><button class="cn" id="asm-cal-next">&#8250;</button></div>
+          <div class="cgrid" id="asm-cal-g"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec" id="s-tecnico">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div>
+          <div class="sthd" style="margin-bottom:14px"><div class="stt">&#128295; Lavori Straordinari</div><button class="btn-add" id="btn-lav">+ Nuovo</button></div>
+          <div class="fp" id="lav-form" style="display:none;margin-bottom:14px"></div>
+          <div id="lav-list"></div>
+        </div>
+        <div>
+          <div class="sthd" style="margin-bottom:14px"><div class="stt">&#128295; Manutenzioni</div><button class="btn-add" id="btn-mnt">+ Nuova</button></div>
+          <div class="fp" id="mnt-form" style="display:none;margin-bottom:14px"></div>
+          <div id="mnt-list"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="overlay"></div>
+<div id="drawer">
+  <div class="dhd">
+    <div><div class="dhd-ci" id="d-city"></div><div class="dhd-nm" id="d-name"></div></div>
+    <button class="dcl" id="d-close">&#x2715;</button>
+  </div>
+  <div class="dbd" id="d-body"></div>
+</div>
+
+<input type="file" id="file-in" accept=".xls,.xlsx">
+<div id="imp-ov">
+  <div id="imp-box">
+    <div style="font-size:36px;margin-bottom:10px">&#128193;</div>
+    <div style="font-size:16px;font-weight:700;color:var(--b1);margin-bottom:8px">Aggiorna da Excel</div>
+    <div style="font-size:13px;color:var(--me)">Seleziona il Prospetto_condomini dalla cartella condivisa</div>
+    <div class="dz" id="dz">
+      <div style="font-size:26px">&#128202;</div>
+      <div style="font-size:13px;color:var(--me);margin-top:7px">Trascina qui oppure <b style="color:var(--b2)">clicca per sfogliare</b></div>
+    </div>
+    <button class="bc2" id="imp-cancel">Annulla</button>
+  </div>
+</div>
+<div id="toast"></div>
+
+</div><!-- /app-shell -->
+
+<script>
+var DATA = [{"id": 1, "citta": "Agrigento", "condominio": "Condominio V.le della Vittoria,  319", "unita": "1 appartamento", "millesimi": "77.847", "inquilino": "Consiglio Notarile", "periodoGestione": "1° gen - 31 dic", "ripartizione": "inquilino", "dovuto": 89.48, "versato": 0.0, "residuo": 89.48, "dataScadenza": "2026-04-02", "status": "insoluto", "info": "23/05/2025 - Prot. 140337/25 Saldo consuntivo anno 2023 + consuntivo 2024 € 344.11\n11/09/2025 - Quota assicurazione fabbricato anno 2025 € 97.58\n02/04/2026 - Prot. 154719 - Scaduto € 545.46\nDalla documentazione risulta undebito di euro 89.48 confermato anche dall'amministratore", "amm": {"nome": "Dott. Alessio Alfano", "email": "gestionecondominialfano@gmail.com", "pec": "amministratorealfano@pec.it", "indirizzo": "Via San Vito,79 - 92100 Agrigento", "tel": "", "cell": "3895866339"}}, {"id": 2, "citta": "Alessandria", "condominio": "Condominio Via Trotti, 46", "unita": "1 appartamento", "millesimi": "53", "inquilino": "Consiglio Notarile", "periodoGestione": "1° gen - 31 dic", "ripartizione": "Misto", "dovuto": 546.1, "versato": 546.1, "residuo": 0.0, "dataScadenza": "2026-12-31", "status": "saldato", "info": "07/04/2025 - Prot. 138522/25 Preventivo 2025 al netto del credito consuntivo 2024 € 284.40\n13/03/2026 - Prot. 153597 - Invio verbale assemblea e prospetto rate\n26/03/2026 - Prot 153597 - Liquidato fino al 31/12/2026 € 546.10", "amm": {"nome": "Antonio F. Penna", "email": "info@antoniopenna.it", "pec": "info@pec.antoniopenna.it", "indirizzo": "", "tel": "013156444", "cell": "3805302206"}}, {"id": 3, "citta": "Ancona", "condominio": "Condominio Via Palestro, 7", "unita": "2 appartamenti", "millesimi": "30.350\n60.260", "inquilino": "Consiglio Notarile", "periodoGestione": "1° mag - 30 apr", "ripartizione": "Misto", "dovuto": 2277.24, "versato": 0.0, "residuo": 2277.24, "dataScadenza": "2026-04-30", "status": "insoluto", "info": "10/02/2025 - Prot. 135529/25 - Preventivo 2024/25 € 2988.79\n19/06/2025 - Preventivo 2025/26 (come anno 2024/25) € 2988.79\n30/01/2026 - Prot. 1516.12 - Rate scadute € 2277.24\nPagato il preventivo fino al 30/04/2026 - L'importo si riferisce ai consuntivi  2023-2024-e 2025 non approvati per mancanza quorum", "amm": {"nome": "Cimarelli S.r.l.s. Amministrazioni Immobiliari", "email": "info@immobiliarecimarelli.com", "pec": "", "indirizzo": "Piazza Stamira, 13 - 60122 - Ancona", "tel": "071 202310", "cell": "333 6210163"}}, {"id": 4, "citta": "Arezzo", "condominio": "Condominio 4 Valli Aretine", "unita": "1 appartamento", "millesimi": "12.543", "inquilino": "Consiglio Notarile", "periodoGestione": "1° lug - 30 giu", "ripartizione": "Misto", "dovuto": 2517.33, "versato": 2713.0, "residuo": -195.67000000000007, "dataScadenza": "2026-06-30", "status": "credito", "info": "27/08/2025 - Prot. 143889/25 Quota parte lavori straordinari sostituzione caldaia condominiale come da delibera assembleare € 2713.00\n13/03/2026 - Prot. 153645 - al 30/06/2026 credito Cassa € -213.46\n24/03/2026 - Prot 153645 - Pagato fino al 30/06/2026 credito Cassa € -213.46", "amm": {"nome": "Piomboni Mafucci Fabrizi Associati", "email": "condomini@pffprogettazione.it", "pec": "condomini@pec.pffprogettazione.it", "indirizzo": "Via Arturo Chiari n°32 - 52100 Arezzo (AR)", "tel": "", "cell": "3703656896"}}, {"id": 5, "citta": "Ascoli Piceno", "condominio": "Condominio Palazzo Santarelli Via Cola D'Amatrice, 5/7/9", "unita": "1 appartamento \n1 appartamento + 1 box", "millesimi": "74.918  \n19.805", "inquilino": "sfitto  (ex archivio)\nConsiglio notarile", "periodoGestione": "1° mag - 30 apr.", "ripartizione": "Misto", "dovuto": null, "versato": null, "residuo": 0.0, "dataScadenza": "2026-04-30", "status": "saldato", "info": "30/10/2025 - Prot. 147428/25 - Preventivo 2025/26 al netto del credito consuntivo 2024/2025 € 1145.78\n17/03/2026 - Prot. 153876 - Pagato fino al 30/04/2026", "amm": {"nome": "Croci Fabio", "email": "info@crocicondomini.it", "pec": "studiocrocifabio@pec.it", "indirizzo": "Via Giuseppe Verdi 73 - 63100 Ascoli Piceno (Marche)", "tel": "0736 258366", "cell": ""}}, {"id": 6, "citta": "Avellino", "condominio": "Condominio Via Perrottelli, 12", "unita": "1 appartamento e 1 p.a.", "millesimi": "82.7", "inquilino": "Consiglio Notarile", "periodoGestione": "1° gen - 31 dic", "ripartizione": "inquilino", "dovuto": null, "versato": null, "residuo": null, "dataScadenza": null, "status": "nd", "info": "24/07/2024 - Prot. 127328/24 Saldo consuntivo 2021 + saldo consuntivo 2022 €176.01\n04/09/2025 - Prot. 144749  Quota lavori str. installazione Linea Vita per manutenzione copertura fabbricato Del. Ass. del 13/06/2025 € 563.01", "amm": {"nome": "Renato Freda", "email": "arch.renatofreda@gmail.com", "pec": "avv.grimaldirocco@pec.giuffre.it", "indirizzo": "Via Tagliamento, 43, 83100 Avellino (AV)", "tel": "0825 32569", "cell": ""}}, {"id": 7, "citta": "Bari", "condominio": "Condominio Via Calefati, 89", "unita": "2 appartamenti (ora 1 ufficio)", "millesimi": "107.97", "inquilino": "Consiglio Notarile", "periodoGestione": "1° gen - 31 dic", "ripartizione": "inquilino", "dovuto": null, "versato": null, "residuo": null, "dataScadenza": null, "status": "nd", "info": "Pagamenti Ok", "amm": {"nome": "Martino Rando", "email": "martinorando@libero.it", "pec": "", "indirizzo": "Via Abate Giacinto Gimma, 149 - 70122 Bari (BA)", "tel": "0805243173", "cell": ""}}, {"id": 8, "citta": "Belluno", "condominio": "Condominio 186/189 - Via Iacopo Tasso", "unita": "2 appartamenti", "millesimi": "25.000\n80.000", "inquilino": "sfitto\nConsiglio Notarile", "periodoGestione": "1° apr - 31 mar", "ripartizione": "Misto", "dovuto": 12912.21, "versato": 12912.21, "residuo": 0.0, "dataScadenza": null, "status": "saldato", "info": "16/05/2025 - Prot. 139293/25 - Acconto 20% lavori per nuovo ascensore come da delibera assembleare del 02/04/2025 € 2058.55\n29/07/2025 - Prot. 143811/25 - Preventivo 2025/2026 + saldo consuntivo 2024/25 € 2619.48\n11/12/2025 - Prot. 149614/25 2a e 3a rata lavori rifacimento ascensore assemblea del 02/04/2025 € 8234.18\n17/03/2026 - Prot. 153878 - Pagamenti saldati", "amm": {"nome": "Studio Benni dr.ssa Valeria", "email": "bennivaleria63@gmail.com", "pec": "bennivaleria@pec.it", "indirizzo": "Via Vittorio Veneto, 95 - 32100 Belluno", "tel": "0437-931544", "cell": "3490075828"}}, {"id": 9, "citta": "Benevento", "condominio": "Condominio IM. ED. Via Dei Rettori, 33", "unita": "1 appartamento", "millesimi": "30.24", "inquilino": "Consiglio Notarile", "periodoGestione": "", "ripartizione": "inquilino", "dovuto": null, "versato": null, "residuo": null, "dataScadenza": null, "status": "nd", "info": "23/05/2024 - Prot. 114038/24 - Quota parte spese legali Avv. Saviano a seguito di notifica atto di precetto del 31/12/2023 per spese legali a seguito di sentenza n. 2509/23 € 137.23\n13/03/2025 - Prot. 137329/25 - Quota integrazione sentenza 2509/2023 + quota sentenza 781/24/782/24  € 282.58\n27/06/2025 - Prot. 139566/25 - Quota sentenza 400/25 € 137.42\n11/07/2025 - Prot. 143027/25 - Quota sentenza 513/2025 € 149.00\n06/11/2025 - Prot. 147828/25 - Quota acconto lavori di messa in sicurezza del fabbricato come da diffida n. 1278 del Comune di Benevento a seguito della nota dei Vigili del Fuoco n. 9195 del 10/07/2025 € 280.00\nNell'assemblea del 09/03/2026 nomina amministratore giudiziario", "amm": {"nome": "Avv. Antonio Caruso", "email": "condominioimed@libero.it", "pec": "avvantoniocaruso@puntopec.it", "indirizzo": "Via Meomartini 3 Bn 82100", "tel": "", "cell": "3288450096"}}, {"id": 10, "citta": "Bergamo", "condominio": "Condominio Galleria Conca d'Oro", "unita": "1 appartamento e 1 box", "millesimi": "85", "inquilino": "Consiglio Notarile", "periodoGestione": "1° mag - 30 apr", "ripartizione": "Misto", "dovuto": null, "versato": null, "residuo": null, "dataScadenza": null, "status": "nd", "info": "24/10/2025 - Prot. 146877/25 - Preventivo 2025/26 + saldo consuntivo 2024/25 € 901.01", "amm": {"nome": "GIOVANNI COMI & C. S.n.c.", "email": "info@studiocomi.org", "pec": "giovanni.comi.bg@pec.it", "indirizzo": "24122 Bergamo, via Piccinini n. 3", "tel": "035/014.36.00", "cell": ""}}, {"id": 11, "citta": "Bologna", "condominio": "Condominio Via S. Domenico 9/11", "unita": "1 ufficio con annesse 2 cantine generato da fusione di 2 appartamenti", "millesimi": "64.546", "inquilino": "Consiglio Notarile", "periodoGestione": "1° ott - 30 sett", "ripartizione": "Misto", "dovuto": null, "versato": null, "residuo": null, "dataScadenza": null, "status": "nd", "info": "05/06/2025 - Prot. 141498/25 Preventivo 2024/25 + saldo consuntivo 2023/24  € 1299.92\nAssemblea del 05/03/2026 con bilanci. In attesa verbale", "amm": {"nome": "Studio Monti & Monti Sas di Bonanni Francesco", "email": "studiomontiemonti@gmail.com", "pec": "studiomontiemonti@pec.it", "indirizzo": "Via Amendola 4 40121 Bologna", "tel": "051249905-252044", "cell": ""}}, {"id": 12, "citta": "Bolzano", "condominio": "Condominio Dante - Via Rosmini, 4", "unita": "1 appartamento\n1 appartamento\ncantina", "millesimi": "78.750\n242.530\n0.740", "inquilino": "Consiglio Notarile\nArchivio Notarile\nCantina Consiglio", "periodoGestione": "1° gen - 31 dic", "ripartizione": "Misto", "dovuto": 2078.33, "versato": 2078.33, "residuo": 0.0, "dataScadenza": "2026-12-31", "status": "saldato", "info": "29/08/2025 - 1^ e 2^ rata rifacimento Ascensore come da delibera Assembleare del 7/07/2025  € 8731.23\n04/09/2025 - Prot. 144782/25 - Preventivo anno 2025 al netto del credito consuntivo anno 2024 € 4161.34\n27/11/2025 - Prot. 148927/25 - 3a e 4a rata rifacimento ascensore come delibera assembleare del 07/07/2025  € 8732.00\n04/02/2026 - Prot. 151729/26 - Preventivo 2026 al netto del credito consuntivo 2025 € 2078.33\n18/03/2026 - Prot. 153969 - Pagato fino al 31/12/2026\n23/03/2026 - Prot 151729 - Pagato fino al 31/12/2026", "amm": {"nome": "Stefano Boccaletti", "email": "info@bebhouse.it", "pec": "bebhouse@pec.it", "indirizzo": "Via Marie Curie, 17 - I39100 Bolzano", "tel": "0471933996 - 0471504005", "cell": ""}}, {"id": 13, "citta": "Bolzano", "condominio": "Condominio Leonardo - Via Leonardo Da Vinci, 24", "unita": "3 box", "millesimi": "14.93", "inquilino": "Sfitto", "periodoGestione": "1° gen - 31 dic", "ripartizione": "Misto", "dovuto": null, "versato": null, "residuo": null, "dataScadenza": null, "status": "nd", "info": "", "amm": {"nome": "NEW ART DI PERON ALESSANDRO & CO. S.A.S.", "email": "newartsas@libero.it", "pec": "newartsas@pec.libero.it", "indirizzo": "VIA DELLA VISITAZIONE 9 - 39100 - BOLZANO (BZ)", "tel": "0471 283769", "cell": ""}}, {"id": 14, "citta": "Brescia", "condominio": "Condominio Galleria Kennedy-Via Ugo la Malfa, 4", "unita": "1 appartamento\n16 posti auto\nmagazzino", "millesimi": "139.667\n14.960\n3.217", "inquilino": "Sfitto", "periodoGestione": "1° gen - 31 dic", "ripartizione": "Misto", "dovuto": 3702.49, "versato": null, "residuo": 3702.49, "dataScadenza": "2026-03-31", "status": "insoluto", "info": "16/05/2025 - Prot. 138713/25 Preventivo 2025 al netto del credito consuntivo 2024 € 11761.40\n19/03/2026 - Prot. 154008 - Al 31/03/2026 scadute € 3702.49\nImporto scaduto € 3702.49 ma importo dovuto per l'anno 2026 euro 16838.49", "amm": {"nome": "Studio Foglietti", "email": "info@studiofoglietti.it", "pec": "info@pec.studiofoglietti.it", "indirizzo": "Via Ugo la Malfa, 4, 25124 Brescia", "tel": "030 226290", "cell": ""}}, {"id": 15, "citta": "Cagliari", "condominio": "Condominio Via Logudoro, 40", "unita": "1 appartamento", "millesimi": "34.48", "inquilino": "Consiglio Notarile", "periodoGestione": "1° gen - 31 dic", "ripartizione": "inquilino", "dovuto": 8.48, "versato": null, "residuo": 8.48, "dataScadenza": "2026-03-31", "status": "insoluto", "info": "23/01/2025 - Prot. 133009/24 - Quota sostituzione portone come delibera assembleare del 27/11/2024 € 104.73\n26/06/2025 - Prot. 142658/25 - Quota lavori urgenti di sostituzione piantoni acqua € 220.00\n11/12/2025 - Prot. 149597/25 - Quota lavori sostituzione impianto citofonico assemblea del 27/11/2025 € 222.00\n13/03/2026 - Prot. 153676 - Al 31/03/2026 scadute € 8.48", "amm": {"nome": "Ornella Aretino", "email": "", "pec": "Ornella.aretino@pec.it", "indirizzo": "", "tel": "", "cell": ""}}, {"id": 16, "citta": "Caltanissetta", "condominio": "Condominio Palazzo Montiroli", "unita": "1 appartamento", "millesimi": "61", "inquilino": "Consiglio Notarile", "periodoGestione": "1° gen - 31 dic", "ripartizione": "inquilino", "dovuto": null, "versato": null, "residuo": null, "dataScadenza": null, "status": "nd", "info": "25/01/2024 - Prot. 112641/2023 - Quota parte esercizio straordinario decreto ingiuntivo Sigg. Giordano - Seminara come delibera assembleare 14/10/2022 € 748.90", "amm": {"nome": "Studio Dinatale Michele", "email": "dinatalestudio75@gmail.com", "pec": "studiodinatalesinteg@pec.it", "indirizzo": "Via Libertà, 136 - 93100 Caltanissetta (CL)", "tel": "3397022442", "cell": "3484757321"}}, {"id": 17, "citta": "Campobasso", "condominio": "Condominio Via Nobile, 3", "unita": "1 appartamento + cantina", "millesimi": "20.99", "inquilino": "Consiglio Notarile", "periodoGestione": "1° nov - 31 ott", "ripartizione": "Misto", "dovuto": null, "versato": null, "residuo": 0.0, "dataScadenza": "2025-12-03", "status": "saldato", "info": "07/04/2025 - Prot. 138347/25 Preventivo 2025 + saldo consuntivo 2024 € 500.39\n05/09/2025 - pagamento nr. 3 rate lavoro abbattimento barriere architettoniche e sost.ne impianto ascensore  via Nobile Campobasso € 3190.62\n03/12/2025 - Prot. 149195/25 - 4a e 5a rata (di 5) lavori abbattimento barriere architettoniche e sostituzione impianto ascensore come delibera del 16/07/2025 € 2127.10\n25/03/2026 - Prot. 154231 - Convocazione assemblea del 13/04/2026", "amm": {"nome": "Mario Cecere", "email": "", "pec": "mariocecere75@pec.it", "indirizzo": "VIA VITTORIO ALFIERI 7, 86100, Campobasso", "tel": "", "cell": ""}}, {"id": 18, "citta": "Cassino", "condominio": "Condominio Coloiacovo - Viale Bonomi, 4", "unita": "1 appartamento \n2 posti auto", "millesimi": "22.91\n0.020", "inquilino": "Sfitti", "periodoGestione": "1° gen - 31 dic", "ripartizione": "Misto", "dovuto": 309.27, "versato": 754.87, "residuo": -445.6, "dataScadenza": "2026-12-31", "status": "credito", "info": "20/03/2025 - Prot. 137386/25 - Preventivo 2025 al netto del credito consuntivo 2024 € 666.03\n30/05/2025 - Qt lavori bocchettoni terrazzo condominiale - posa in opera impianto videosorveglianza del. Ass. condominiale del 7/03/2025 €192.92\n26/03/2026 - Prot. 154327 - Invio estratto conto € 309.27\n27/03/2026 - Prot 154063 - Pagato fino al 31/12/2026 € 754.87", "amm": {"nome": "Russo Vincenzo", "email": "studiovincenzorusso@gmail.com", "pec": "studiorussovincenzo@pec.it", "indirizzo": "Via E. De Nicola 70 - Cassino (FR) 03043", "tel": "", "cell": "3398106979"}}, {"id": 19, "citta": "Catania", "condominio": "Condominio Via D'Annunzio, 33", "unita": "2 appartamenti", "millesimi": "86.4", "inquilino": "Consiglio Notarile", "periodoGestione": "1° gen - 31 dic", "ripartizione": "inquilino", "dovuto": null, "versato": null, "residuo": null, "dataScadenza": null, "status": "nd", "info": "", "amm": {"nome": "Avv. Carla Sorrentino", "email": "", "pec": "carla.sorrentino@pec.ordineavvocaticatania.it", "indirizzo": "VIA GABRIELE D'ANNUNZIO, 48 - 95128 - CATANIA (CT)", "tel": "", "cell": ""}}, {"id": 20, "citta": "Enna", "condominio": "Condominio Centro Direzionale Diaz", "unita": "1 appartamento", "millesimi": "38.24", "inquilino": "Consiglio Notarile", "periodoGestione": "1° gen - 31 dic", "ripartizione": "inquilino", "dovuto": null, "versato": null, "residuo": null, "dataScadenza": null, "status": "nd", "info": "03/02/2025 - Prot. 135149/25 - Quota manutenzione straordinaria ascensore come delibera assembleare del 24/01/2025 € 209.93\n13/03/2026 - Prot. 153700 - Quote 2025 ok € 1316.52 Mancano rate 2026 (importo ?)", "amm": {"nome": "Andrea Ferrera", "email": "", "pec": "andreaferrera@pec.it", "indirizzo": "Via Nazionale n. 31 - 94100 Enna", "tel": "", "cell": "335/1017113"}}, {"id": 21, "citta": "Ferrara", "condominio": "Condominio Giardino - Via Poledrelli, 1b", "unita": "1 appartamento", "millesimi": "28.65", "inquilino": "Consiglio Notarile", "periodoGestione": "1° gen - 31 dic", "ripartizione": "Misto", "dovuto": null, "versato": null, "residuo": null, "dataScadenza": null, "status": "nd", "info": "30/05/2025 - Qt esercizio straordinario rifacimento portoncini r Incarico manut. Lastrici solari Del.Assembleare del 26/03/2025 € 341.08\n24/10/2025 - Prot. 145162/25 - Preventivo anno 2025 + saldo consuntivo 2024 € 973.27", "amm": {"nome": "Studio DOMUS CONSULT Amministrazioni Condominiali di P.I. Ortiero Arturo", "email": "amministrazionidomusconsult@gmail.com", "pec": "arturo.ortiero@pec.libero.it", "indirizzo": "C.so Porta Reno, 37 44121 Ferrara", "tel": "0532474877", "cell": "3289516828"}}, {"id": 22, "citta": "Firenze", "condominio": "Condominio Via S.Niccolò, 72", "unita": "2 uffici e 1 cantina", "millesimi": "297", "inquilino": "Consiglio Notarile", "periodoGestione": "1° gen - 31 dic", "ripartizione": "Misto", "dovuto": null, "versato": null, "residuo": null, "dataScadenza": null, "status": "nd", "info": "28/03/2025 - Prot. 138137/25 Preventivo 2025 al netto del credito consuntivo 2024 € 1704.49\n13/03/2026 - Prot. 153646 - Rate 2025 saldate + rate 2026 nell'assemblea del 24/03/2026\nPredisposti conteggi - fino al 31/12/2026 € 1304.74", "amm": {"nome": "Geom. Marco Rendesi", "email": "studiotecnicorendesi@gmail.com", "pec": "marco.rendesi@geopec.it", "indirizzo": "Via Giuseppe Verdi 105 Sesto Fiorentino (FI)", "tel": "055/442549", "cell": ""}}, {"id": 23, "citta": "Forlì", "condominio": "Condominio Paradiso Palazzola", "unita": "1 ufficio e 1 cantina", "millesimi": "43.854", "inquilino": "Consiglio Notarile", "periodoGestione": "1° lug - 30° giu", "ripartizione": "Misto", "dovuto": null, "versato": null, "residuo": -944.04, "dataScadenza": "2026-03-13", "status": "credito", "info": "13/03/2026 - Prot. 153695 - In fase di redazione il consuntivo 2024-2025. al momento credito Cassa € -944.04", "amm": {"nome": "Forum Livii Soc. Coop.", "email": "info@forumlivii.it", "pec": "forumlivii@pec.postacertificatapro.net", "indirizzo": "Via Fossato Vecchio 2/i - 47121 - Forlì (FC)", "tel": "054331580", "cell": "39.331.1865968"}}, {"id": 24, "citta": "Frosinone", "condominio": "Condominio Mezzacorsa - Via Calvosa, 25", "unita": "1 appartamento", "millesimi": "132", "inquilino": "Consiglio Notarile", "periodoGestione": "1° gen - 31 dic", "ripartizione": "inquilino", "dovuto": null, "versato": null, "residuo": null, "dataScadenza": null, "status": "nd", "info": "", "amm": {"nome": "", "email": "", "pec": "valeriapatrizi@pec.it", "indirizzo": "", "tel": "", "cell": ""}}, {"id": 25, "citta": "Genova", "condominio": "Condominio Via Bacigalupo, 4", "unita": "1 appartamento\n1 appartamento", "millesimi": "41.000\n74.000", "inquilino": "Ufficio\nConsiglio Notarile", "periodoGestione": "1° mag - 30 apr", "ripartizione": "sfitto \nCassa e richiede sul MAV", "dovuto": 6636.26, "versato": null, "residuo": 6636.26, "dataScadenza": "2026-03-17", "status": "insoluto", "info": "10/06/2025 - Preventivo anno 2025 Consuntivo anni 2023/24 € 10372.37\n17/03/2026 - Prot. 153881 - Ad oggi scaduto € 6636.26 compreso quote inquilino", "amm": {"nome": "Amministrazioni Immobiliari Canevaro Sas", "email": "studiocanevaro@canevaro.it", "pec": "studiocanevaro@pec.it / segreteriacanevaro@pec.it", "indirizzo": "Via Peschiera 18 16122 Genova GE", "tel": "010883014 - 010810486", "cell": ""}}, {"id": 26, "citta": "Gorizia", "condominio": "Condominio Roma - Via Mazzini, 20", "unita": "1 appartamento", "millesimi": "26", "inquilino": "Consiglio Notarile", "periodoGestione": "1° ott - 30 sett", "ripartizione": "Misto", "dovuto": 1490.09, "versato": 1490.08, "residuo": 0.009999999999990905, "dataScadenza": null, "status": "insoluto", "info": "16/05/2025 - Prot. 139390/25 Consuntivo 2023/24 + Preventivo 2024/25 + lavori straordinari deliberati nell'assemblea del 14/04/2025 € 703.43\n18/03/2026 - Prot. 153941 - Pagamenti in regola", "amm": {"nome": "Studio Gamma SRL", "email": "studiogammagorizia@gmail.com", "pec": "studiogammasrlgorizia@legalmail.it", "indirizzo": "Via Garibaldi, 6 - 34170 GORIZIA", "tel": "0481-532803", "cell": ""}}, {"id": 27, "citta": "Grosseto", "condominio": "Condominio Via Abruzzi, 11", "unita": "1 appartamento", "millesimi": "109", "inquilino": "Consiglio Notarile", "periodoGestione": "1° gen - 31 dic", "ripartizione": "Misto", "dovuto": 455.23, "versato": 453.0, "residuo": null, "dataScadenza": null, "status": "nd", "info": "23/01/2025 - Prot. 133561/24 - Quota sostituzione impianto citofonico come da delibera assembleare del 19/11/2024 € 576.82\n05/09/2025 - Preventivo anno 2025 al netto Consuntivo 2024 € 345.31\n04/02/2026 - Prot. 151564/26 - Preventivo 2026 + saldo consuntivo 2025 € 453.00\n13/03/2026 - Prot. 153711 - Invio convocazione assemblea del 23/03/2026 con approvazione preventivo 2026", "amm": {"nome": "Monia Viti", "email": "condomini@studiomoniaviti.it", "pec": "monia.viti@pec.commercialisti.it", "indirizzo": "Via Damiano Chiesa 68 - 58100 Grosseto (GR)", "tel": "0564 20497", "cell": "3473831494"}}, {"id": 28, "citta": "Ivrea", "condominio": "Condominio Minerva - Via S. Nazario, 2/4", "unita": "1 appartamento", "millesimi": "37", "inquilino": "sfitto", "periodoGestione": "1° giu - 31 mag", "ripartizione": "Misto", "dovuto": null, "versato": null, "residuo": null, "dataScadenza": null, "status": "nd", "info": "03/12/2025 - Prot. 133124/24 - Preventivo 2024/25 + saldo consuntivo 2023/24 € 1318.12", "amm": {"nome": "Geom. Mauro Favre", "email": "favremauro@virgilio.it", "pec": "mauro.favre@geopec.it", "indirizzo": "Via Circonvallazione, 6 - 10015 Ivrea (TO)", "tel": "012544952", "cell": ""}}, {"id": 29, "citta": "La Spezia", "condominio": "Condominio Via F. Crispi, 69", "unita": "1 ufficio con 2 cantine", "millesimi": "140.4", "inquilino": "Consiglio Notarile", "periodoGestione": "1°ott - 30 set", "ripartizione": "Misto", "dovuto": 781.67, "versato": 781.67, "residuo": 0.0, "dataScadenza": "2026-09-30", "status": "saldato", "info": "16/05/2025 - Prot. 139737/25 - Quota lavori completamento allaccio fognature 2025 come delibere assembleari 09/06/2023 e del 07/02/2025 € 3600.95\n27/02/2026 - Prot. 152389/26 Preventivo 2025/26 + saldo consuntivo 2024/25 € 781.67\n18/03/2026 - Prot. 153942 - Pagato fino al 30/09/2026", "amm": {"nome": "Studio Gioia", "email": "studio_gioia@virgilio.it", "pec": "studio_gioia@pec.it", "indirizzo": "Via dei Colli 27- La Spezia 19121", "tel": "0187 - 731231", "cell": ""}}, {"id": 30, "citta": "Latina", "condominio": "Condominio Viale dello Statuto, 13", "unita": "1 appartamento", "millesimi": "43.32", "inquilino": "Consiglio Notarile", "periodoGestione": "1° gen - 31 dic", "ripartizione": "Misto", "dovuto": null, "versato": null, "residuo": null, "dataScadenza": null, "status": "nd", "info": "10/03/2025 - Prot. 136038/25 Preventivo 2025 + saldo consuntivo 2023 + consuntivo 2024 e quota straordinaria autoclave € 547.05\n16/03/2026 - Prot. 153836 - Al 31/12/2025 € 39.32 + dal 01/01/2026 al 31/12/2026 € 156.14\nDA VERIFICARE - Preventivo comunicato dall'amministratore differente", "amm": {"nome": "Brunella Caroselli", "email": "dr.brunellacaroselli@panservice.it", "pec": "brunella.caroselli@legalmail.it", "indirizzo": "Viale dello Statuto 13- 04100 Latina", "tel": "0773 339148", "cell": "333 5698739"}}, {"id": 31, "citta": "Lecce", "condominio": "Condominio Viale Aldo Moro", "unita": "1 appartamento + 2 box", "millesimi": "36.61", "inquilino": "Consiglio Notarile", "periodoGestione": "1° gen - 31 dic", "ripartizione": "inquilino", "dovuto": null, "versato": null, "residuo": null, "dataScadenza": null, "status": "nd", "info": "27/02/2026 - Prot. 151108/26 Quota lavori torrino + quota affidamento incarico proof. e quota riparazione gruppo pompe antincendio € 1009.51", "amm": {"nome": "Geom. Antonio Vergara", "email": "", "pec": "antonio.vergara@geopec.it", "indirizzo": "Via di Pettorano, 2 – LECCE - 73100 - LE", "tel": "0832/331293", "cell": ""}}, {"id": 32, "citta": "Livorno", "condominio": "Condominio Amedeus - Corso Amedeo, 34", "unita": "1 ufficio", "millesimi": "52.826", "inquilino": "Consiglio Notarile", "periodoGestione": "1° mag - 30apr", "ripartizione": "inquilino", "dovuto": 394.75, "versato": 394.75, "residuo": 0.0, "dataScadenza": "2026-04-30", "status": "saldato", "info": "21/01/2025 - Prot. 147775/25 - Preventivo 2025/26 + saldo consuntivo 2024/25 € 394.75\n16/03/2026 - Prot. 153766 - saldato tutto fino al 30/04/2026", "amm": {"nome": "BASILE STEFANIA", "email": "amministrazione.basilestefania@gmail.com", "pec": "basile_s@pec.it", "indirizzo": "Via dell'Ardenza, 21 57128 Livorno", "tel": "0586 375666", "cell": ""}}, {"id": 33, "citta": "Mantova", "condominio": "Condominio Palazzo Berla Via Bertani, 31", "unita": "1 appartamento + 3 p.m.", "millesimi": "101.163", "inquilino": "Consiglio Notarile", "periodoGestione": "1° nov - 31 ott", "ripartizione": "Misto", "dovuto": 484.98, "versato": 484.98, "residuo": 0.0, "dataScadenza": "2026-10-31", "status": "saldato", "info": "04/02/2026 - Prot. 151610/26 Preventivo 2025/26 al netto del credito consuntivo 2024/25 € 484.98\n02/04/2026 - Prot. 154790 - Pagamenti regolari", "amm": {"nome": "Studio Tecnico Cortellazzi & Associati", "email": "amministrazione@studiocortellazzi.it", "pec": "davide.cortellazzi@geopec.it", "indirizzo": "Via Montanara Curtatone, 40 - 46100 Mantova", "tel": "0376/367096", "cell": ""}}, {"id": 34, "citta": "Matera", "condominio": "Condominio P.zza Michele Bianco 28 B-C", "unita": "1 appartamento e 1 cantina", "millesimi": "42.52", "inquilino": "Consiglio Notarile", "periodoGestione": "1° gen - 31 dic", "ripartizione": "Misto", "dovuto": 838.94, "versato": null, "residuo": 838.94, "dataScadenza": null, "status": "insoluto", "info": "03/02/2025 - Prot. 135370/25 Preventivo 2024 al netto del credito consuntivo 2023 € 54.88\n02/04/2026 - Assemblea del 28/01/2026 - sollecitato invio verbale assemblea", "amm": {"nome": "STUDIO DOMUS Amm.re Rag. Michele Traietta", "email": "info@studiodomustraietta.it", "pec": "studiodomus.tm@pec.it", "indirizzo": "Via Giuseppe Gattini 45/C, 75100 Matera MT", "tel": "", "cell": "3334314085"}}, {"id": 35, "citta": "Messina", "condominio": "Condominio Isolato 195", "unita": "2 appartamenti", "millesimi": "32.74", "inquilino": "Consiglio Notarile", "periodoGestione": "1° gen - 31 dic", "ripartizione": "Misto", "dovuto": 526.95, "versato": null, "residuo": 526.95, "dataScadenza": null, "status": "insoluto", "info": "13/06/2025 - Prot. 138623/25 Preventivo 2025 + saldo consuntivo 2024 € 335.72\n01/04/2026 - Prot. 154689 - Convocazione assemblea\nIn attesa verbale", "amm": {"nome": "Building Administration S.r.l.s.", "email": "info@buildingadministration.it", "pec": "buildingadministration@gxpec.it", "indirizzo": "Via XXVII Luglio, 34 - 98123 Messina", "tel": "090/9146008", "cell": ""}}, {"id": 36, "citta": "Modena", "condominio": "Condominio Canalgrande - Corso Canalgrande, 71", "unita": "3 appartamenti", "millesimi": "141.45", "inquilino": "Consiglio Notarile di Modena", "periodoGestione": "1° gen - 31 dic", "ripartizione": "Misto", "dovuto": 961.86, "versato": 961.86, "residuo": 0.0, "dataScadenza": "2026-12-31", "status": "saldato", "info": "04/02/2026 - Prot. 151725/26 - Preventivo 2026 al netto del credito consuntivo 2025 € 961.86\n16/03/2026 - Prot. 153798 - Pagato fino al 31/12/2026", "amm": {"nome": "Palmeri Gestioni Immobiliari SRL - Geom. Andrea Reggiani", "email": "palmerigestimm@libero.it", "pec": "palmerigestimm@pec.it", "indirizzo": "Via Pietro Giardini 219 - Modena 41124", "tel": "059.216420", "cell": ""}}, {"id": 37, "citta": "Napoli", "condominio": "Condominio Palazzo Ottaiano - Via Chiaia n.142", "unita": "1 appartamento", "millesimi": "103.26", "inquilino": "Consiglio Notarile", "periodoGestione": "1° gen - 31 dic", "ripartizione": "inquilino", "dovuto": null, "versato": null, "residuo": null, "dataScadenza": null, "status": "nd", "info": "27/01/2025 - Prot. 132363/24 - Consuntivo anno 2022 + consuntivo 2023 al netto del credito anno 2019 € 2005.97", "amm": {"nome": "Chiaiagest srl Amministratore Roberto Limoncelli", "email": "robertolimoncelli@libero.it / chiaiagest@gmail.com", "pec": "robertolimoncelli@pec.it", "indirizzo": "Via Alcide De Gasperi, 45 - Napoli", "tel": "", "cell": ""}}, {"id": 38, "citta": "Novara", "condominio": "Condominio Baluardo Partigiani - Via B. Partigiano, 13", "unita": "1 appartamento con soffitta", "millesimi": "61", "inquilino": "Consiglio Notarile", "periodoGestione": "1° giu - 31 mag", "ripartizione": "Misto", "dovuto": 1423.73, "versato": 1423.75, "residuo": -0.02, "dataScadenza": "2026-05-31", "status": "credito", "info": "27/10/2025 - Prot. 143330/25 - Preventivo 2025/2026 al netto del credito 2024/2025 € 668.16\n11/12/2025 - Prot. 149654/25 - Quota esercizio straordinario sostituzione contabilizzatori di calore delibera del 17/06/2025 € 755.59\n17/03/2026 - Prot. 153896 - Pagamenti regolari", "amm": {"nome": "Studio Tecnico Amministrativo Geom. Davide TURINI", "email": "segreteria@studiotecnicoturini.it", "pec": "studiobt@pec.it", "indirizzo": "Via San Francesco d'Assisi, 26 - 28100 Novara (NO)", "tel": "0321/61.18.86.", "cell": ""}}, {"id": 39, "citta": "Padova", "condominio": "Condominio Storione B - Via Riviera Tito Livio, 2", "unita": "1 appartamento con soffitta", "millesimi": "48.83", "inquilino": "Sfitto", "periodoGestione": "1° mag - 30 apr", "ripartizione": "Al momento sfitto paga Cassa", "dovuto": 1046.58, "versato": 1046.58, "residuo": 0.0, "dataScadenza": "2026-03-25", "status": "saldato", "info": "13/06/2025 - Prot. 142067/25 - Preventivo 2025/26 + saldo consuntivo 2024/25 € 4147.58\n25/03/2026 - Prot. 154252 - Pagamenti regolari", "amm": {"nome": "Studio Tosato SRL", "email": "info@tosatostudio.it", "pec": "comunicazioni.studiotosato@pec.it", "indirizzo": "VIA SORIO 114/A 35141 PADOVA", "tel": "049/8713286", "cell": ""}}, {"id": 40, "citta": "Padova", "condominio": "Condominio Rezzonico II° - Via Berchet, 17", "unita": "1 appartamento con soffitta\n3 PM", "millesimi": "229.000\n28.840", "inquilino": "Consiglio Notarile", "periodoGestione": "1° apr - 31 mar", "ripartizione": "Misto", "dovuto": 8361.12, "versato": 8361.12, "residuo": 0.0, "dataScadenza": "2026-03-20", "status": "saldato", "info": "16/05/2025 - Prot. 139358/25 Acconto per il rifacimento della guaina del lastrico solare come da delibera assembleare del 04/12/2024 € 3506.63\n29/07/2025 - Prot. 143603/25 Preventivo 2025/26 + saldo consuntivo 2024/25 € 8361.12\n20/03/2026 - Prot. 154461 - Pagamenti regolari", "amm": {"nome": "Amministrazioni Roberti", "email": "", "pec": "anita.roberti@legalmail.it", "indirizzo": "Via Tripoli, 12  35141 Padova", "tel": "049/8710099", "cell": ""}}, {"id": 41, "citta": "Palermo", "condominio": "Condominio Palazzo Moncada", "unita": "2 appartamenti", "millesimi": "102.14 sfitto 159.40 Consiglio", "inquilino": "1 sfitto e 1 Consiglio Notarile", "periodoGestione": "1° gen - 31 dic", "ripartizione": "l'unità sfitta paga Cassa l'altro il Consiglio", "dovuto": null, "versato": null, "residuo": null, "dataScadenza": null, "status": "nd", "info": "23/05/2025 - Preventivo 2025 al netto del credito consuntivo 2023 e del 2024 € 5685.49\n20/03/2026 - Prot. 154064 - Invio convocazione assemblea del 30/03/2026 senza bilanci all'o.d.g.\nDA PAGARE", "amm": {"nome": "Studio Saldì Azzollini srl", "email": "info@studiosaldiazzollini.com", "pec": "studiosaldiazzollini@pec.it", "indirizzo": "Via Petrarca, 5 90144 Palermo PA", "tel": "091348344", "cell": ""}}, {"id": 42, "citta": "Parma", "condominio": "Condominio S. Apollonia - P.le S. Apollonia", "unita": "1 ufficio con cantina - Sub 5\n1 ufficio con ripostiglio - Sub 12", "millesimi": "292", "inquilino": "Consiglio Notarile", "periodoGestione": "1° set - 31 ago", "ripartizione": "Misto", "dovuto": 2468.68, "versato": 2468.68, "residuo": 0.0, "dataScadenza": "2026-08-31", "status": "saldato", "info": "15/12/2025 - Prot. 149830/25 - Preventivo 2025/26 al netto del credito consuntivo 2024/25 € 2468.68\n16/03/2026 - Prot. 153789 - Pagato fino al 31/08/2026", "amm": {"nome": "Studio Flavio Calestani Amministrazioni e Consulenze Immobiliari", "email": "info@studiocalestani.it", "pec": "studiocalestani@pec.it", "indirizzo": "P.le Boito, 5 - 43121 Parma", "tel": "0521 282348", "cell": ""}}, {"id": 43, "citta": "Perugia", "condominio": "Condominio Via della Stella, 13", "unita": "1 appartamento", "millesimi": "173", "inquilino": "Consiglio Notarile", "periodoGestione": "1° apr - 31 mar", "ripartizione": "Misto", "dovuto": null, "versato": null, "residuo": null, "dataScadenza": null, "status": "nd", "info": "23/05/2025 - Prot. 140288/25 Preventivo 2025/26 al netto del credito consuntivo 2024/25 € 521.70\n29/07/2025 - Prot. 143645/25  1a e 2a rata installazione ascensore come da assemblea condominiale del 19/06/2025 € 10910.09\n11/12/2025 - Prot. 149646/25 - 3a e 4a rata istallazione ascensore come da assemblea condominiale del 19/06/2025 € 7273.40", "amm": {"nome": "MORETTI CONSULT S.R.L.", "email": "info@moretticonsult.it", "pec": "moretticonsult@messaggipec.it", "indirizzo": "VIA ARTURO CHECCHI 29 - 06123 - PERUGIA (PG)", "tel": "0756313014", "cell": ""}}, {"id": 44, "citta": "Ragusa", "condominio": "Via E. Homo, 183", "unita": "1 appartamento", "millesimi": "55", "inquilino": "Consiglio Notarile", "periodoGestione": "", "ripartizione": "", "dovuto": null, "versato": null, "residuo": null, "dataScadenza": null, "status": "nd", "info": "", "amm": {"nome": "", "email": "", "pec": "", "indirizzo": "", "tel": "", "cell": ""}}, {"id": 45, "citta": "Reggio Calabria", "condominio": "Condominio Anna Due - Via S. Anna 2°, 28/30", "unita": "1 appartamento", "millesimi": "85.39", "inquilino": "Consiglio Notarile", "periodoGestione": "1° gen - 31 dic", "ripartizione": "Misto", "dovuto": null, "versato": null, "residuo": null, "dataScadenza": null, "status": "nd", "info": "16/12/2024 - Prot. 133468/24 Quota parte lavori disallaccio contatore condominiale servizio idrico e creazione allacci per singola unità immobiliare come delibera assembleare 17/09/2024 € 540.00\n02/04/2026 - Prot. 154721 - Invio consuntivi 2021-2022-2023-2024-2025 per approvazione all'assemblea del 09/04/2026", "amm": {"nome": "Giuseppina Minniti", "email": "condominioannadue.rc@libero.it", "pec": "", "indirizzo": "Via Aldo Moro 40 88046 - Lamezia Terme CZ", "tel": "", "cell": "3339875988"}}, {"id": 46, "citta": "Roma", "condominio": "Condominio Urbana, 53", "unita": "2 negozi", "millesimi": "174.07", "inquilino": "Sfitti", "periodoGestione": "1° gen - 31 dic", "ripartizione": "paga Cassa", "dovuto": 739.6, "versato": 739.6, "residuo": 0.0, "dataScadenza": "2026-12-31", "status": "saldato", "info": "30/01/2026 - Prot. 151320/26 Acconto 1° e 2° rata preventivo 2026 (gennaio-giugno) € 252.00\n30/03/2026 - Prot. 154494 - Rate per € 340.21\n30/03/2026 - Prot 154493 - Pagato fino al 31/12/2026 € 487.60", "amm": {"nome": "Rag. Marco Musicò", "email": "musicomarco46@gmail.com", "pec": "musicomarco46@pec.it", "indirizzo": "Via Olindo Guerrini 21 - Roma 00137", "tel": "", "cell": "3496630231"}}, {"id": 47, "citta": "Roma", "condominio": "Condominio Via Boezio, 14", "unita": "1 appartamento", "millesimi": "70", "inquilino": "Pharmavip", "periodoGestione": "1° gen - 31 dic", "ripartizione": "cassa e poi addebita su mav", "dovuto": null, "versato": null, "residuo": null, "dataScadenza": null, "status": "nd", "info": "31/03/2025 - Prot. 137617/25 - Preventivo 2025 + saldo consuntivo 2024 € 3693.10", "amm": {"nome": "Studio Associato Busi Geronzi", "email": "info@studiobusigeronzi.it", "pec": "", "indirizzo": "Via Ruggero Fiore 27, 00136 Roma", "tel": "06/39740551", "cell": "347/6269429"}}, {"id": 48, "citta": "Roma", "condominio": "Condominio Via dei Savorelli, 24", "unita": "1 appartamento  +1 box + 1 neg.", "millesimi": "75.83", "inquilino": "Sfitto", "periodoGestione": "1° gen - 31 dic", "ripartizione": "al momento sfitto paga Cassa", "dovuto": null, "versato": null, "residuo": null, "dataScadenza": null, "status": "nd", "info": "05/09/2025 - Quota lavori porzione copertura lastra tettoia € 148.72\n11/09/2025 - Prot. 144460/25 Quota lavori riparazione impianto termico €434.13\n11/11/2025 - Saldo consuntivo 2024 + saldo preventivo 2025 preventivo riscaldamento 2025/26 al netto del credito consuntivo riscaldamento 2024/25 € 1885.03\nDA VERIFICARE - (Stiamo facendo le opportune verifiche: non ci sembra infatti che siano dovuti importi al 30/04/2026)", "amm": {"nome": "Avv. Monica Fedeli", "email": "adm.amministrazione@studiofedeli.com", "pec": "adm.amministrazione@pec.it", "indirizzo": "Via Simone de Saint Bon, 42 Sc. B 00195 Roma", "tel": "06. 955.844.28", "cell": ""}}, {"id": 49, "citta": "Roma", "condominio": "Condominio Eur 2005", "unita": "1 cantina e 2 p.a.", "millesimi": "0.646", "inquilino": "Sfitto", "periodoGestione": "1° mag - 30 apr", "ripartizione": "al momento sfitto paga Cassa", "dovuto": null, "versato": null, "residuo": null, "dataScadenza": null, "status": "nd", "info": "", "amm": {"nome": "Antonino Cambrea", "email": "condominicambrea@gmail.com", "pec": "", "indirizzo": "Largo Lido Duranti 20/F - 00128 Roma", "tel": "", "cell": "3206191507"}}, {"id": 50, "citta": "Roma", "condominio": "Condominio Via Valbondione 109", "unita": "1 negozio", "millesimi": "24.491", "inquilino": "sfitto", "periodoGestione": "1° gen - 31 dic", "ripartizione": "paga tutto Cassa e richiede sui Mav", "dovuto": 1306.68, "versato": 1447.18, "residuo": -140.5, "dataScadenza": null, "status": "credito", "info": "04/08/2025 - Preventivo anno 2025 , credito Consuntivo 2024 e al netto dell'acconto versato € 631.00\n30/01/2026 - Prot. 150628/26 - Acconto 1°-2°-3° rata Preventivo 2026 € 426.00\n16/03/2026 - Prot. 153823 - Saldato fino al 30/06/2026", "amm": {"nome": "Ornella Prosperi", "email": "prosperi.amministrazioni@gmail.com", "pec": "ornella.prosperi@pec.it", "indirizzo": "Via Busto Arsizio, 15 00188 Roma", "tel": "06 87081637", "cell": "334 6622301"}}, {"id": 51, "citta": "Rovigo", "condominio": "Condominio Corso - Corso Del Popolo, 70", "unita": "1 ufficio con cantina", "millesimi": "43", "inquilino": "Consiglio Notarile", "periodoGestione": "1° gen - 31 dic", "ripartizione": "Misto", "dovuto": null, "versato": null, "residuo": null, "dataScadenza": null, "status": "nd", "info": "16/04/2025 - Prot. 139011 del 10/04/2025 - Quota tinteggiatura vano scale deliberata nell'assembleare del 22/06/2023 e descritta nell'assemblea del 26/06/2024 € 212.96\n27/10/2025 - Prot. 146772/25 - Preventivo 2025 al netto del credito consuntivo 2024 € 662.97", "amm": {"nome": "Studio Stecca Andrea", "email": "studiostecca@libero.it", "pec": "studiostecca@pec.it", "indirizzo": "Viale E.F.Fusinato n. 17-45100 Rovigo", "tel": "0425-484377", "cell": "348-2212347"}}, {"id": 52, "citta": "S. Maria Capua Vetere", "condominio": "Condominio Palazzo Aversano - Via Trav. Mario Fiore, 12", "unita": "1 appartamento", "millesimi": "30.68", "inquilino": "Consiglio Notarile", "periodoGestione": "1° gen - 31 dic", "ripartizione": "Misto", "dovuto": null, "versato": null, "residuo": null, "dataScadenza": null, "status": "nd", "info": "05/08/2025 - quota lavori straordinari € 13212.00", "amm": {"nome": "Dott. Fusco Pietro", "email": "studiofuscopietro@gmail.com", "pec": "", "indirizzo": "Via Galatina 179 - 81055 Santa Maria Capua Vetere (CE)", "tel": "0823 844276", "cell": ""}}, {"id": 53, "citta": "Savona", "condominio": "Condominio N. S. dell' Olmo - Via Untoria, 9", "unita": "1 appartamento", "millesimi": "56.18", "inquilino": "Consiglio Notarile", "periodoGestione": "1° lug - 30 giu", "ripartizione": "Misto", "dovuto": 467.08, "versato": 467.08, "residuo": 0.0, "dataScadenza": "2026-06-30", "status": "saldato", "info": "13/03/2025 - Prot. 137187/25 Preventivo 2024/25 + saldo consuntivo 2023/24 € 492.86\n17/03/2026 - Prot. 153907 - Dovuto al 30/06/2026 € 467.08\n30/03/2026 - Prot 153713 - Pagato fino al 30/06/2026 € 467.08", "amm": {"nome": "Andrea Caddeo Silvana Biasutti - BC AMMINISTRAZIONI CONDOMINIALI", "email": "bcamministrazioni@pec.it", "pec": "bcamministrazioni@pec.it", "indirizzo": "Via Santa Lucia 7 r - Via Paleocapa 18/24 - 17100 Savona", "tel": "019 4500099", "cell": ""}}, {"id": 54, "citta": "Siena", "condominio": "Condominio Via del Porrione, 85", "unita": "parte dell'appartamento dell'89 prende il civ. 85", "millesimi": "104.67", "inquilino": "Consiglio Notarile", "periodoGestione": "1° set - 31 ago", "ripartizione": "ci sono solo spese di proprietà paga Cassa", "dovuto": 368.44, "versato": 391.43, "residuo": -22.99, "dataScadenza": "2026-08-31", "status": "credito", "info": "16/03/2026 - Prot. 153797 - Saldato fino al 31/08/2026 e rimane credito di € -22.99", "amm": {"nome": "Bondi Carletti", "email": "amministrazione@bondicarletti.it", "pec": "condominio@pec.bondicarlettisrl.it", "indirizzo": "Via dei Montanini 63 - 53100 Siena", "tel": "0577226554", "cell": ""}}, {"id": 55, "citta": "Siena", "condominio": "Condominio Via del Porrione, 89/91", "unita": "1 appartamento", "millesimi": "148.72", "inquilino": "Consiglio Notarile", "periodoGestione": "1° apr - 31 mar", "ripartizione": "Misto", "dovuto": null, "versato": null, "residuo": null, "dataScadenza": null, "status": "nd", "info": "28/03/2025 - Prot. 138023/25 Preventivo 2025 + saldo consuntivo 2023/2024 € 1050.45\n20/01/2026 - Prot. 150591 - Acconto preventivo 2026 € 211.40", "amm": {"nome": "AMMINISTRAZIONI IMMOBILIARI PAOLONI CLAUDIO", "email": "studiopaoloni@sivagest.com", "pec": "", "indirizzo": "Strada Massetana n. 106 – 53100 Siena", "tel": "0577-43104", "cell": ""}}, {"id": 56, "citta": "Siracusa", "condominio": "Condominio Frorida - Viale Teracati, 31a", "unita": "1 appartamento", "millesimi": "82", "inquilino": "Consiglio Notarile", "periodoGestione": "1° gen - 31 dic", "ripartizione": "inquilino", "dovuto": null, "versato": null, "residuo": 0.0, "dataScadenza": "2026-03-20", "status": "saldato", "info": "20/03/2026 - Prot. 154086 - Pagamenti regolari", "amm": {"nome": "Ing. Renato La Runa", "email": "renatolaruna@gmail.com", "pec": "renato.laruna@ingpec.eu", "indirizzo": "Via Arno 3 - Siracusa", "tel": "", "cell": "3206812501"}}, {"id": 57, "citta": "Sondrio", "condominio": "Condominio Enologica - Via Piazzi / Via Zara", "unita": "1 appartamento + 2 box", "millesimi": "18.514", "inquilino": "Consiglio Notarile", "periodoGestione": "1° nov - 31 ott", "ripartizione": "Misto", "dovuto": 1348.85, "versato": null, "residuo": null, "dataScadenza": null, "status": "nd", "info": "In attesa documentazione sollecitata più volte", "amm": {"nome": "Paolo Marchetti", "email": "", "pec": "paolo.marchetti3@geopec.it", "indirizzo": "Via Maffei 4 Sondrio", "tel": "", "cell": ""}}, {"id": 58, "citta": "Taranto", "condominio": "Condominio Via D'Aquino, 74", "unita": "1 appartamento", "millesimi": "72.1", "inquilino": "Consiglio Notarile", "periodoGestione": "1° gen - 31 dic", "ripartizione": "inquilino", "dovuto": null, "versato": null, "residuo": null, "dataScadenza": null, "status": "nd", "info": "17/11/2025 - Prot. 148248/25 Saldo consuntivo 2022 + saldo consuntivo 2023 + saldo consuntivo 2024 e preventivo 2025 € 346.41\n20/01/2026 - Prot. 150025 - Quota abbattimento barriere architettoniche € 722.44\n10/02/2026 - Prot. 151109/26 Quota lavori impianto videocitofonico + quota antincendio come delibera assembleare del 11/12/2025 € 1194.22", "amm": {"nome": "Geom. Perrone Mario", "email": "marioperrone1@virgilio.it", "pec": "", "indirizzo": "Corso Italia 345 74100 Taranto", "tel": "099 400267", "cell": ""}}, {"id": 59, "citta": "Teramo", "condominio": "Condominio Palazzina S. Giorgio - Via Cerulli Irelli, 5", "unita": "1 appartamento", "millesimi": "38", "inquilino": "Consiglio Notarile", "periodoGestione": "1° set - 31 ago", "ripartizione": "Misto", "dovuto": 253.92, "versato": null, "residuo": null, "dataScadenza": null, "status": "nd", "info": "13/06/2025 - Prot. 141980/25 - Preventivo 2024/25 al netto del credito consuntivo 2023/24 + lavori sostituzione argano ascensore € 413.94\n21/03/2026 - Prot. 154096 - Quote scadute 253.92\nDA VERIFICARE - Convocazione assemblea 08/04/2026", "amm": {"nome": "Studio Di Bartolomeo", "email": "dibartolomeo.studio@tin.it", "pec": "dibartolomeo.studio@legalmail.it", "indirizzo": "Via Fonte Regina n.23 - 64100 Teramo", "tel": "0861 210210", "cell": "333 7508808"}}, {"id": 60, "citta": "Terni", "condominio": "Condominio P.zza del Mercato, 50", "unita": "1 Ufficio e 2 cantine", "millesimi": "40.1", "inquilino": "Consiglio Notarile", "periodoGestione": "1° giu - 31 mag", "ripartizione": "Misto", "dovuto": null, "versato": null, "residuo": null, "dataScadenza": null, "status": "nd", "info": "20/01/2026 - Prot. 148532 Preventivo 2025/26 e saldo consuntivo 2024/25 e quota preventivo lavori argano e impianto videocitofono € 1949.09", "amm": {"nome": "Amm.re Dott. Ing. Mauro Nicoli", "email": "studioing.nicoli@libero.it / mnicoli1975@gmail.com", "pec": "condominio.mercato_50@pec.it", "indirizzo": "Via Istria n.23 - TERNI (TR)", "tel": "", "cell": "329-4280608"}}, {"id": 61, "citta": "Trapani", "condominio": "Condominio Monte Erice - P.zza S. Agostino, 2", "unita": "1 appartamento", "millesimi": "18.17", "inquilino": "Consiglio Notarile", "periodoGestione": "1° gen - 31 dic", "ripartizione": "Misto", "dovuto": null, "versato": null, "residuo": null, "dataScadenza": null, "status": "nd", "info": "14/04/2025 - Prot. 138852/25 Preventivo 2025 al netto del credito consuntivo 2024 € 143.13\n26/03/2026 - Prot. 154328 - Invio convocazione del 17/04/2026", "amm": {"nome": "Studio TRINACRIA di Rosaria Bernardi.", "email": "condominiomonteerice@libero.it", "pec": "condominiomonteerice@pec.it", "indirizzo": "Via dell'Oca 12, 91100 Trapani (TP)", "tel": "0923555541", "cell": "3474453627"}}, {"id": 62, "citta": "Trento", "condominio": "Condominio Italia 68", "unita": "1 appartamento", "millesimi": "43.83", "inquilino": "Consiglio Notarile", "periodoGestione": "1° set - 31 ago", "ripartizione": "Misto", "dovuto": 4162.0, "versato": 4165.72, "residuo": -3.72, "dataScadenza": "2026-08-31", "status": "credito", "info": "04/02/2026 - Prot. 151489/26 - Preventivo 2025/26 + saldo consuntivo 2024/25 e lavori come da punto 5 assemblea 21/01/2026 € 4165.72\n16/03/2026 - Prot. 153837 - Saldato al 31/08/2026 (credito di € -3.72 per arrotondamento rate)", "amm": {"nome": "ELLEDIGI di Lorena Di Gesaro", "email": "elledigi.tn@hotmail.it", "pec": "", "indirizzo": "Via della Cooperazione nr. 36 - 38123 Trento", "tel": "349 1525534", "cell": ""}}, {"id": 63, "citta": "Udine", "condominio": "Condominio Alle Tamerici - Via Bertaldia, 70", "unita": "1 appartamento + p.a.", "millesimi": "42.20+16.36", "inquilino": "Consiglio Notarile", "periodoGestione": "1° set - 31 ago", "ripartizione": "Misto", "dovuto": 1636.3, "versato": 1636.3, "residuo": 0.0, "dataScadenza": null, "status": "saldato", "info": "27/06/2025 - Prot. 142576/25 - Preventivo 2025 + saldo consuntivo 2024 € 1636.30\n19/03/2026 - Prot. 154028 - Pagamenti regolari", "amm": {"nome": "STAC Amministrazioni Srl", "email": "info@amministrazionistac.eu", "pec": "amministrazionistac@pec.net", "indirizzo": "Via Ciro di Pers, 9/B - 33100 - UDINE (UD)", "tel": "0432501432", "cell": ""}}, {"id": 64, "citta": "Venezia", "condominio": "Condominio Corte del Teatro - Sestriere S. Marco, 4624", "unita": "1 appartamento", "millesimi": "132.23", "inquilino": "Inquilino", "periodoGestione": "1° gen - 31 dic", "ripartizione": "paga tutto Cassa e richiede sui Mav", "dovuto": null, "versato": null, "residuo": null, "dataScadenza": null, "status": "nd", "info": "03/02/2025 - Prot. 133793/24 - Quota parte perizia Ing. Marascalchi come delibera assembleare del 08/07/2024 € 1006.64\n23/05/2025 - Preventivo 2025 + saldo consuntivo 2024 al netto del versamento effettuato con mandato 153 € 843.09\n20/03/2026 - Prot. 154087 - Quote scadute 932.93\nDA VERIFICARE", "amm": {"nome": "geom. Gian Luigi Bertolo", "email": "bertolo@studiotecnico.ve.it", "pec": "gian.luigi.bertolo@geopec.it", "indirizzo": "Dorsoduro – Calle de La Vida, 3305 – 30123 Venezia", "tel": "", "cell": "328.41.98.097"}}, {"id": 65, "citta": "Vicenza", "condominio": "Condominio Contrà Porti 21", "unita": "1 appartamento + 2 p.m. + 2 box", "millesimi": "79.3", "inquilino": "Consiglio Notarile", "periodoGestione": "1° gen - 31 dic", "ripartizione": "inquilino", "dovuto": 3854.06, "versato": 3854.06, "residuo": 0.0, "dataScadenza": "2026-03-17", "status": "saldato", "info": "18/03/2024 - Prot. 117504/24 - 1° e 2° rata Preventivo 2023/24 periodo 01/10/2023 - 31/05/2024 al netto del credito consuntivo anno 2022/23 € 1011.96\n26/07/2024 - 3a rata (saldo) preventivo 2023/24 € 747.44", "amm": {"nome": "COSIM", "email": "amministrazione@cosim.it", "pec": "condominioporti21@pec.it", "indirizzo": "Via dell'Economia, 84- 36100 Vicenza", "tel": "0444964938", "cell": ""}}, {"id": 66, "citta": "Vicenza", "condominio": "Condominio Torretti - Via Torretti, 24", "unita": "1 negozio/ufficio", "millesimi": "5.65", "inquilino": "Sfitto", "periodoGestione": "1° ott - 30 sett", "ripartizione": "al momento sfitto paga Cassa", "dovuto": null, "versato": null, "residuo": null, "dataScadenza": null, "status": "nd", "info": "04/08/2025 - Preventivo anno 2025 e Consuntivo 2024 € 3002.24\n17/03/2026 - Prot. 153877 - Pagamenti regolari", "amm": {"nome": "AGENZIA IMMOBILIARE I.T.F. S.A.S. DI FALGHEROZZO ANDREA & C.", "email": "agenziaitf@gmail.com", "pec": "agenziaitf@legalmail.it", "indirizzo": "VIA LEGIONE ANTONINI 135/C - 36100 - VICENZA", "tel": "0444965323", "cell": ""}}, {"id": 67, "citta": "Viterbo", "condominio": "Condominio Via Fontanella del Suffragio, 6", "unita": "1 appartamento e 1 cantina", "millesimi": "12.63", "inquilino": "Consiglio Notarile", "periodoGestione": "", "ripartizione": "", "dovuto": null, "versato": null, "residuo": null, "dataScadenza": null, "status": "nd", "info": "27/11/2025 - Prot. 148814/25 Preventivo 2025/26 + saldo consuntivo 2024/25 € 1117.47", "amm": {"nome": "Amministrazione condominiale Costantini snc di Paolo ed Emanuele Costantini", "email": "info@costantinicond.it", "pec": "", "indirizzo": "Via della Morra n°21- 01100 Viterbo", "tel": "", "cell": ""}}];
+var GEO  = {"Agrigento": [37.31, 13.58], "Alessandria": [44.91, 8.62], "Ancona": [43.61, 13.51], "Arezzo": [43.46, 11.88], "Ascoli Piceno": [42.85, 13.57], "Avellino": [40.91, 14.79], "Bari": [41.12, 16.87], "Belluno": [46.14, 12.22], "Benevento": [41.13, 14.78], "Bergamo": [45.69, 9.67], "Bologna": [44.49, 11.34], "Bolzano": [46.5, 11.35], "Brescia": [45.54, 10.22], "Cagliari": [39.22, 9.11], "Caltanissetta": [37.49, 14.06], "Campobasso": [41.56, 14.66], "Cassino": [41.49, 13.83], "Catania": [37.5, 15.09], "Enna": [37.56, 14.28], "Ferrara": [44.84, 11.62], "Firenze": [43.77, 11.26], "Forlì": [44.22, 12.04], "Frosinone": [41.64, 13.35], "Genova": [44.41, 8.93], "Gorizia": [45.94, 13.62], "Grosseto": [42.76, 11.11], "Ivrea": [45.46, 7.87], "La Spezia": [44.1, 9.82], "Latina": [41.47, 12.91], "Lecce": [40.35, 18.17], "Livorno": [43.55, 10.31], "Mantova": [45.16, 10.79], "Matera": [40.67, 16.6], "Messina": [38.19, 15.55], "Modena": [44.65, 10.93], "Napoli": [40.85, 14.27], "Novara": [45.45, 8.62], "Padova": [45.41, 11.88], "Palermo": [38.12, 13.36], "Parma": [44.8, 10.33], "Perugia": [43.11, 12.39], "Ragusa": [36.92, 14.73], "Reggio Calabria": [38.11, 15.65], "Roma": [41.89, 12.49], "Rovigo": [45.07, 11.79], "S. Maria Capua Vetere": [41.08, 14.25], "Savona": [44.31, 8.48], "Siena": [43.32, 11.33], "Siracusa": [37.07, 15.29], "Sondrio": [46.17, 9.87], "Taranto": [40.46, 17.25], "Teramo": [42.66, 13.7], "Terni": [42.56, 12.64], "Trapani": [38.02, 12.54], "Trento": [46.07, 11.12], "Udine": [46.06, 13.24], "Venezia": [45.44, 12.33], "Vicenza": [45.55, 11.55], "Viterbo": [42.42, 12.11]};
+// ================================================================
+// SUPABASE LAYER — sostituisce localStorage con database cloud
+// Tutte le funzioni sono async e aggiornano il DB in background
+// ================================================================
+
+var SB_URL = 'https://cxgizuvppnthhlwmzczr.supabase.co';
+var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4Z2l6dXZwcG50aGhsd216Y3pyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNzUzNjYsImV4cCI6MjA5Nzk1MTM2Nn0.V-tRfembpQkyky_QMdtjf8azlBR8DHPYnQtiR3T4Oyk';
+
+// Client Supabase minimale (senza dipendenze npm)
+var SB = {
+  _headers: function() {
+    return {
+      'apikey': SB_KEY,
+      'Authorization': 'Bearer ' + SB_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation'
+    };
+  },
+  // SELECT
+  get: async function(table, filter) {
+    var url = SB_URL + '/rest/v1/' + table + '?select=*' + (filter ? '&' + filter : '');
+    var r = await fetch(url, { headers: SB._headers() });
+    if (!r.ok) throw new Error('SB GET ' + table + ': ' + r.status);
+    return r.json();
+  },
+  // UPSERT (insert or update)
+  upsert: async function(table, row) {
+    var url = SB_URL + '/rest/v1/' + table;
+    var r = await fetch(url, {
+      method: 'POST',
+      headers: Object.assign({}, SB._headers(), {'Prefer': 'resolution=merge-duplicates,return=representation'}),
+      body: JSON.stringify(row)
+    });
+    if (!r.ok) { var txt = await r.text(); throw new Error('SB UPSERT ' + table + ': ' + txt); }
+    return r.json();
+  },
+  // DELETE
+  del: async function(table, filter) {
+    var url = SB_URL + '/rest/v1/' + table + '?' + filter;
+    var r = await fetch(url, { method: 'DELETE', headers: SB._headers() });
+    if (!r.ok) throw new Error('SB DEL ' + table + ': ' + r.status);
+    return true;
+  }
+};
+
+// ── STORAGE API (rimpiazza localStorage) ─────────────────────
+// Tutte le funzioni sono async. Le UI functions chiamano queste
+// e non aspettano — "fire and forget" con toast di conferma.
+
+async function sbSaveEdit(unitaId, fieldObj) {
+  try {
+    var rows = await SB.get('edits', 'unita_id=eq.' + unitaId);
+    var existing = rows.length ? rows[0].data : {};
+    var merged = Object.assign({}, existing, fieldObj);
+    await SB.upsert('edits', { unita_id: unitaId, data: merged });
+  } catch(e) { console.error('sbSaveEdit:', e); }
+}
+
+async function sbLoadEdits() {
+  try {
+    var rows = await SB.get('edits');
+    var out = {};
+    rows.forEach(function(r) { out[r.unita_id] = r.data; });
+    return out;
+  } catch(e) { console.error('sbLoadEdits:', e); return {}; }
+}
+
+async function sbSaveCat(unitaId, fieldObj) {
+  try {
+    var rows = await SB.get('catastale', 'unita_id=eq.' + unitaId);
+    var existing = rows.length ? rows[0].data : {};
+    var merged = Object.assign({}, existing, fieldObj);
+    await SB.upsert('catastale', { unita_id: unitaId, data: merged });
+  } catch(e) { console.error('sbSaveCat:', e); }
+}
+
+async function sbLoadCat() {
+  try {
+    var rows = await SB.get('catastale');
+    var out = {};
+    rows.forEach(function(r) { out[r.unita_id] = r.data; });
+    return out;
+  } catch(e) { console.error('sbLoadCat:', e); return {}; }
+}
+
+async function sbSaveRow(table, row) {
+  try { await SB.upsert(table, row); }
+  catch(e) { console.error('sbSaveRow ' + table + ':', e); }
+}
+
+async function sbLoadTable(table) {
+  try { return await SB.get(table); }
+  catch(e) { console.error('sbLoadTable ' + table + ':', e); return []; }
+}
+
+async function sbDelRow(table, id) {
+  try { await SB.del(table, 'id=eq.' + id); }
+  catch(e) { console.error('sbDelRow ' + table + ':', e); }
+}
+
+// ── CARICAMENTO INIZIALE DA SUPABASE ─────────────────────────
+async function loadFromSupabase() {
+  toast('Connessione al database\u2026', '');
+  try {
+    // Carica edits e catastale
+    var edRows  = await sbLoadEdits();
+    var catRows = await sbLoadCat();
+
+    // Applica edits ai dati in memoria
+    Object.keys(edRows).forEach(function(id) {
+      ED[+id] = edRows[id];
+    });
+    Object.keys(catRows).forEach(function(id) {
+      CAT[+id] = catRows[id];
+    });
+
+    // Carica inquilini, assemblee, lavori, manutenzioni
+    var inqRows = await sbLoadTable('inquilini');
+    var asmRows = await sbLoadTable('assemblee');
+    var lavRows = await sbLoadTable('lavori');
+    var mntRows = await sbLoadTable('manutenzioni');
+
+    INQ = {};
+    inqRows.forEach(function(r) { INQ[r.id] = r.data; });
+
+    ASM = asmRows.map(function(r) {
+      return Object.assign({ _sbid: r.id }, r.data);
+    });
+
+    LAV = lavRows.map(function(r) {
+      return Object.assign({ _sbid: r.id }, r.data);
+    });
+
+    MNT = mntRows.map(function(r) {
+      return Object.assign({ _sbid: r.id }, r.data);
+    });
+
+    toast('\u2705 Database connesso', 'ok');
+    refreshAll();
+  } catch(e) {
+    toast('\u274c Errore connessione: ' + e.message, 'err');
+    console.error(e);
+    // Fallback: usa dati locali
+    refreshAll();
+  }
+}
+
+// ── OVERRIDE SAVE FUNCTIONS ───────────────────────────────────
+// Sovrascrive le funzioni svXX() del gestionale base
+// con versioni che scrivono su Supabase
+
+function svED_orig() {}  // no-op: replaced below
+
+// Patch: intercetta setEdit per salvare su Supabase
+var _origSetEdit = null;
+function patchSetEdit() {
+  if (typeof setEdit === 'function') {
+    _origSetEdit = setEdit;
+    setEdit = function(r, field, val) {  // eslint-disable-line
+      if (!ED[r.id]) ED[r.id] = {};
+      ED[r.id][field] = val;
+      var patch = {}; patch[field] = val;
+      sbSaveEdit(r.id, patch);
+    };
+  }
+}
+
+// Patch assemblee save
+function patchASM() {
+  var _origSvASM = window.svASM;
+  window.svASM = function() {
+    // Sync all ASM to Supabase
+    // We rebuild the table: delete all and reinsert
+    // Simpler: upsert each with _sbid if present
+    ASM.forEach(function(a) {
+      var payload = Object.assign({}, a);
+      delete payload._sbid;
+      if (a._sbid) {
+        SB.upsert('assemblee', { id: a._sbid, data: payload }).catch(console.error);
+      } else {
+        SB.upsert('assemblee', { data: payload }).then(function(rows) {
+          if (rows && rows[0]) a._sbid = rows[0].id;
+        }).catch(console.error);
+      }
+    });
+  };
+}
+
+function patchINQ() {
+  window.svINQ = function() {
+    Object.keys(INQ).forEach(function(k) {
+      var payload = INQ[k];
+      var numK = parseInt(k, 10);
+      if (!isNaN(numK) && numK > 1000000000) {
+        // timestamp ID = new record
+        SB.upsert('inquilini', { data: payload }).then(function(rows) {
+          if (rows && rows[0]) {
+            INQ[rows[0].id] = payload;
+            delete INQ[k];
+          }
+        }).catch(console.error);
+      } else {
+        SB.upsert('inquilini', { id: numK, data: payload }).catch(console.error);
+      }
+    });
+  };
+}
+
+function patchLAV() {
+  window.svLAV = function() {
+    LAV.forEach(function(l) {
+      var payload = Object.assign({}, l);
+      delete payload._sbid;
+      if (l._sbid) {
+        SB.upsert('lavori', { id: l._sbid, data: payload }).catch(console.error);
+      } else {
+        SB.upsert('lavori', { data: payload }).then(function(rows) {
+          if (rows && rows[0]) l._sbid = rows[0].id;
+        }).catch(console.error);
+      }
+    });
+  };
+}
+
+function patchMNT() {
+  window.svMNT = function() {
+    MNT.forEach(function(m) {
+      var payload = Object.assign({}, m);
+      delete payload._sbid;
+      if (m._sbid) {
+        SB.upsert('manutenzioni', { id: m._sbid, data: payload }).catch(console.error);
+      } else {
+        SB.upsert('manutenzioni', { data: payload }).then(function(rows) {
+          if (rows && rows[0]) m._sbid = rows[0].id;
+        }).catch(console.error);
+      }
+    });
+  };
+}
+
+function patchCAT() {
+  window.svCAT = function() {
+    Object.keys(CAT).forEach(function(id) {
+      sbSaveCat(+id, CAT[id]);
+    });
+  };
+}
+
+// Apply all patches after DOM ready
+function applySupabasePatches() {
+  patchSetEdit();
+  patchASM();
+  patchINQ();
+  patchLAV();
+  patchMNT();
+  patchCAT();
+}
+
+// ================================================================
+// GESTIONALE PATRIMONIO — Cassa del Notariato  v5
+// Regola fondamentale: nessun ciclo tra funzioni
+// ================================================================
+
+// ── STORAGE ──────────────────────────────────────────────────
+var ST = (function() {
+  function rd(k) { try { return JSON.parse(localStorage.getItem(k)||'null'); } catch(e) { return null; } }
+  function wr(k,v) { try { localStorage.setItem(k,JSON.stringify(v)); } catch(e) {} }
+  return { rd:rd, wr:wr };
+})();
+
+var ED  = ST.rd('g_ed_v1')  || {};
+var CAT = ST.rd('g_cat_v1') || {};
+var INQ = ST.rd('g_inq_v1') || {};
+var ASM = ST.rd('g_asm_v1') || [];
+var LAV = ST.rd('g_lav_v1') || [];
+var MNT = ST.rd('g_mnt_v1') || [];
+
+function svED()  { ST.wr('g_ed_v1',  ED);  }
+function svCAT() { ST.wr('g_cat_v1', CAT); }
+function svINQ() { ST.wr('g_inq_v1', INQ); }
+function svASM() { ST.wr('g_asm_v1', ASM); }
+function svLAV() { ST.wr('g_lav_v1', LAV); }
+function svMNT() { ST.wr('g_mnt_v1', MNT); }
+function nxId(a) { return a.length ? Math.max.apply(null, a.map(function(x){return x.id||0;})) + 1 : 1; }
+
+// ── UTILS ────────────────────────────────────────────────────
+var TODAY = new Date('2026-06-15');
+var MESI  = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',
+             'Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+
+function fmt(n) {
+  if (n == null) return '\u2014';
+  var p = Math.abs(n).toFixed(2).split('.');
+  p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+  return (n < 0 ? '-' : '') + '\u20AC\u00a0' + p[0] + ',' + p[1];
+}
+function fd(d) {
+  if (!d) return '\u2014';
+  var p = d.split('-');
+  return p[2]+'/'+p[1]+'/'+p[0];
+}
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function scCls(d) {
+  if (!d) return null;
+  var diff = (new Date(d) - TODAY) / 86400000;
+  return diff < 0 ? 'sc' : diff <= 90 ? 'pr' : 'ok';
+}
+function isDV(r) { return !!(r.info && r.info.toLowerCase().indexOf('da verific') >= 0); }
+function isFitto(r) {
+  var i = (r.inquilino||'').toLowerCase();
+  return i.indexOf('sfitt') < 0 && i.trim() !== '' && i !== 'sfitto';
+}
+
+// Edits accessors
+function gF(r, f) {
+  var e = ED[r.id] || {};
+  if (e[f] !== undefined) return e[f];
+  var a = r.amm || {};
+  if (f === 'amm_nome')      return a.nome      || '';
+  if (f === 'amm_email')     return a.email     || '';
+  if (f === 'amm_pec')       return a.pec       || '';
+  if (f === 'amm_tel')       return a.tel       || '';
+  if (f === 'amm_cell')      return a.cell      || '';
+  if (f === 'amm_indirizzo') return a.indirizzo || '';
+  return r[f] != null ? r[f] : '';
+}
+function gDov(r) { var e=ED[r.id]||{}; return e.dovuto  !== undefined ? +e.dovuto  : r.dovuto;  }
+function gVer(r) { var e=ED[r.id]||{}; return e.versato !== undefined ? +e.versato : r.versato; }
+function gRes(r) {
+  var d=gDov(r), v=gVer(r);
+  if (d==null && v==null) return null;
+  var x = Math.round(((d||0)-(v||0))*100)/100;
+  return Math.abs(x) < 0.10 ? 0 : x;
+}
+function gSt(r) {
+  var x = gRes(r);
+  return x===null ? 'nd' : x>0 ? 'insoluto' : x<0 ? 'credito' : 'saldato';
+}
+function gMill(r) {
+  var t=0;
+  (r.millesimi||'').split('\n').forEach(function(s){
+    var n=parseFloat(s.replace(',','.'));
+    if(!isNaN(n)&&n>0) t+=n;
+  });
+  return t;
+}
+
+function ttag(u) {
+  u=(u||'').toLowerCase(); var o=[];
+  if(u.indexOf('appartam')>=0)    o.push('<span class="tt ta">Appart.</span>');
+  if(u.indexOf('ufficio')>=0||u.indexOf('studio')>=0) o.push('<span class="tt tu">Ufficio</span>');
+  if(u.indexOf('cantina')>=0)     o.push('<span class="tt tc">Cantina</span>');
+  if(u.indexOf('box')>=0||u.indexOf('p.a.')>=0||u.indexOf('p.m.')>=0) o.push('<span class="tt tb">Box/Auto</span>');
+  if(u.indexOf('soffitta')>=0)    o.push('<span class="tt ts">Soffitta</span>');
+  if(u.indexOf('negozio')>=0)     o.push('<span class="tt tn">Negozio</span>');
+  if(!o.length) o.push('<span class="tt">'+esc(u.split('\n')[0].substring(0,16))+'</span>');
+  return o.join('');
+}
+function bdg(st) {
+  var m={insoluto:'bi',saldato:'bs',credito:'bc',nd:'bn'};
+  var l={insoluto:'Insoluto',saldato:'Saldato',credito:'Credito',nd:'N.D.'};
+  return '<span class="badge '+(m[st]||'bn')+'">'+(l[st]||'N.D.')+'</span>';
+}
+function toast(msg,t) {
+  var el=document.getElementById('toast');
+  el.textContent=msg; el.className='show'+(t?' '+t:'');
+  setTimeout(function(){el.className='';},3000);
+}
+function $v(id)  { var e=document.getElementById(id); return e?e.value||'':''; }
+function $on(id,fn) { var e=document.getElementById(id); if(e) e.addEventListener('click',fn); }
+function $set(id,v) { var e=document.getElementById(id); if(e) e.innerHTML=String(v); }
+
+// ── NAV ──────────────────────────────────────────────────────
+var PTITLES = {
+  dashboard:'Dashboard', unita:'Unit\u00e0 Immobiliari',
+  pagamenti:'Pagamenti', scadenze:'Scadenze',
+  costi:'Analisi Costi', amministratori:'Amministratori',
+  mappa:'Vista per Citt\u00e0', catastale:'Dati Catastali',
+  inquilini:'Inquilini', assemblee:'Assemblee', tecnico:'Tecnico'
+};
+
+function nav(id) {
+  document.querySelectorAll('.sec').forEach(function(s){s.classList.remove('active');});
+  document.querySelectorAll('.ni').forEach(function(n){n.classList.remove('active');});
+  var s=document.getElementById('s-'+id); if(s) s.classList.add('active');
+  var n=document.getElementById('ni-'+id); if(n) n.classList.add('active');
+  document.getElementById('ptitle').textContent = PTITLES[id]||id;
+  if(id==='mappa') setTimeout(initMappa, 80);
+}
+
+// ── CALENDAR ─────────────────────────────────────────────────
+var CY=TODAY.getFullYear(), CM=TODAY.getMonth();
+
+function buildCal(gId, lId) {
+  var g=document.getElementById(gId), l=document.getElementById(lId);
+  if(!g||!l) return;
+  l.textContent = MESI[CM]+' '+CY;
+  var sm={}, am={};
+  DATA.forEach(function(r){
+    if(!r.dataScadenza) return;
+    var d=new Date(r.dataScadenza);
+    if(d.getFullYear()===CY&&d.getMonth()===CM) {
+      var k=d.getDate(); if(!sm[k])sm[k]=[]; sm[k].push(r);
+    }
+  });
+  ASM.forEach(function(a){
+    if(!a.data) return;
+    var d=new Date(a.data);
+    if(d.getFullYear()===CY&&d.getMonth()===CM) {
+      var k=d.getDate(); if(!am[k])am[k]=[]; am[k].push(a);
+    }
+  });
+  var DOW=['L','M','M','G','V','S','D'];
+  var first=(new Date(CY,CM,1).getDay()+6)%7, days=new Date(CY,CM+1,0).getDate();
+  var h=DOW.map(function(d){return '<div class="cdow">'+d+'</div>';}).join('');
+  for(var i=0;i<first;i++) h+='<div class="cday empty"></div>';
+  for(var day=1;day<=days;day++){
+    var isT=day===TODAY.getDate()&&CM===TODAY.getMonth()&&CY===TODAY.getFullYear();
+    var sc2=sm[day]||[], as2=am[day]||[];
+    var cls='cday'+(isT?' today':'')+(sc2.length?' hsc':'')+(as2.length?' hasm':'');
+    var ev='';
+    if(sc2.length) ev+='<div class="cev csc">'+esc(sc2[0].citta)+(sc2.length>1?'+':'')+'</div>';
+    if(as2.length) ev+='<div class="cev casm">'+esc((as2[0].condominio||'Asm').substring(0,8))+'</div>';
+    h+='<div class="'+cls+'" data-d="'+day+'"><div class="cnum">'+day+'</div>'+ev+'</div>';
+  }
+  g.innerHTML=h;
+  g.querySelectorAll('.hsc,.hasm').forEach(function(el){
+    el.addEventListener('click',function(){
+      var d2=parseInt(el.dataset.d,10);
+      var s2=sm[d2]||[], a2=am[d2]||[];
+      if(s2.length===1&&!a2.length) openDrw(s2[0].id);
+      else if(a2.length) nav('assemblee');
+      else nav('scadenze');
+    });
+  });
+}
+
+function calNav(dir) {
+  CM+=dir;
+  if(CM<0){CM=11;CY--;} else if(CM>11){CM=0;CY++;}
+  buildCal('cal-g','cal-l');
+  buildCal('asm-cal-g','asm-cal-l');
+}
+
+// ── DASHBOARD ────────────────────────────────────────────────
+function initDash() {
+  var ins=DATA.filter(function(r){return gSt(r)==='insoluto';});
+  var sal=DATA.filter(function(r){return gSt(r)==='saldato';});
+  var dv=DATA.filter(isDV);
+  var ti=ins.reduce(function(a,r){return a+(gRes(r)||0);},0);
+  var af=ASM.filter(function(a){return a.data&&new Date(a.data)>=TODAY;});
+
+  $set('k-tot',   DATA.length);
+  $set('k-ins-n', ins.length);
+  $set('k-ins-v', fmt(ti));
+  $set('k-sal-n', sal.length);
+  $set('k-sal-p', Math.round(sal.length/DATA.length*100)+'%');
+  $set('k-dv-n',  dv.length);
+  $set('k-asm-n', af.length);
+
+  var top=ins.slice().sort(function(a,b){return(gRes(b)||0)-(gRes(a)||0);}).slice(0,8);
+  var mx=top.length?(gRes(top[0])||1):1;
+  $set('ch-ins', top.length ? top.map(function(r){
+    var v=gRes(r)||0;
+    return '<div class="br"><div class="bl">'+esc(r.citta)+'</div>'+
+      '<div class="bt"><div class="bf" style="width:'+Math.round(v/mx*100)+'%;background:var(--ro)"></div></div>'+
+      '<div class="ba pos">'+fmt(v)+'</div></div>';
+  }).join('') : '<div class="empty">Nessun insoluto \u2714</div>');
+
+  var SS=['insoluto','saldato','credito','nd'];
+  var SC={insoluto:'var(--ro)',saldato:'var(--ve)',credito:'var(--b2)',nd:'#BCC5D0'};
+  var SL={insoluto:'Insoluti',saldato:'Saldati',credito:'Crediti',nd:'N.D.'};
+  var CC=SS.map(function(s){return DATA.filter(function(r){return gSt(r)===s;}).length;});
+  var mx2=Math.max.apply(null,CC)||1;
+  $set('ch-st', SS.map(function(s,i){
+    return '<div class="br"><div class="bl">'+SL[s]+'</div>'+
+      '<div class="bt"><div class="bf" style="width:'+Math.round(CC[i]/mx2*100)+'%;background:'+SC[s]+'"></div></div>'+
+      '<div class="ba">'+CC[i]+'</div></div>';
+  }).join(''));
+
+  buildCal('cal-g','cal-l');
+
+  // badge scadenze
+  var n=DATA.filter(function(r){return r.dataScadenza&&scCls(r.dataScadenza)!=='ok'&&gSt(r)!=='saldato';}).length;
+  $set('badge-sc', n||'');
+}
+
+// ── UNITÀ ────────────────────────────────────────────────────
+var _ud=[], _uSort={c:null,d:1};
+
+function renderU(data) {
+  _ud=data;
+  var tb=document.getElementById('tb-u');
+  if(!data.length){tb.innerHTML='<tr><td colspan="10"><div class="empty">Nessuna unit\u00e0</div></td></tr>';return;}
+  tb.innerHTML=data.map(function(r){
+    var res=gRes(r),st=gSt(r),dov=gDov(r);
+    var sc=r.dataScadenza?scCls(r.dataScadenza):null;
+    var scx=(sc&&sc!=='ok')?'<span class="ch'+(sc==='sc'?'s':'p')+'">'+(sc==='sc'?'SCAD.':'90gg')+'</span>':'';
+    var rc=res>0?'pos':res<0?'neg':res===0?'zer':'nda';
+    var rs=res!==null?(res<0?fmt(Math.abs(res))+' CR':fmt(res)):'\u2014';
+    return '<tr data-id="'+r.id+'">'+
+      '<td class="dim">'+r.id+'</td>'+
+      '<td><b>'+esc(r.citta)+'</b></td>'+
+      '<td class="ellip" title="'+esc(r.condominio)+'">'+esc(r.condominio)+(isDV(r)?'<span class="chv">!</span>':'')+'</td>'+
+      '<td class="dim">'+esc((r.unita||'').split('\n')[0])+'</td>'+
+      '<td>'+esc((r.inquilino||'').split('\n')[0])+'</td>'+
+      '<td class="dim">'+esc(r.ripartizione||'\u2014')+'</td>'+
+      '<td>'+bdg(st)+'</td>'+
+      '<td class="ra">'+(dov!=null?fmt(dov):'\u2014')+'</td>'+
+      '<td class="ra '+rc+'">'+rs+'</td>'+
+      '<td>'+fd(r.dataScadenza)+scx+'</td></tr>';
+  }).join('');
+  tb.querySelectorAll('tr[data-id]').forEach(function(tr){
+    tr.addEventListener('click',function(){openDrw(+tr.dataset.id);});
+  });
+}
+
+function filtU(f) {
+  _uSort={c:null,d:1};
+  document.querySelectorAll('#s-unita .fb').forEach(function(b){b.classList.remove('active');});
+  var btn=document.getElementById('fb-'+f); if(btn) btn.classList.add('active');
+  renderU(
+    f==='all'    ? DATA :
+    f==='fitto'  ? DATA.filter(isFitto) :
+    f==='sfitto' ? DATA.filter(function(r){return !isFitto(r);}) :
+    DATA.filter(function(r){return gSt(r)===f;})
+  );
+}
+
+function sortU(col) {
+  if(_uSort.c===col) _uSort.d*=-1; else{_uSort.c=col;_uSort.d=1;}
+  document.querySelectorAll('[id^="sh-"]').forEach(function(t){t.classList.remove('sa','sd');});
+  var th=document.getElementById('sh-'+col); if(th) th.classList.add(_uSort.d===1?'sa':'sd');
+  var gv=function(r){
+    if(col==='ci') return r.citta;
+    if(col==='co') return r.condominio;
+    if(col==='un') return r.unita||'';
+    if(col==='iq') return r.inquilino||'';
+    if(col==='ri') return r.ripartizione||'';
+    if(col==='st') return gSt(r);
+    if(col==='dv') return gDov(r)||0;
+    if(col==='re') return gRes(r)||0;
+    if(col==='sc') return r.dataScadenza||'';
+    return '';
+  };
+  renderU(_ud.slice().sort(function(a,b){var av=gv(a),bv=gv(b);return av>bv?_uSort.d:av<bv?-_uSort.d:0;}));
+}
+
+// ── PAGAMENTI ────────────────────────────────────────────────
+// NOTE: initPag calcola i totali e chiama renderPag UNA SOLA VOLTA.
+// renderPag NON chiama initPag. Zero loop.
+var _pSort={c:'re',d:-1};
+
+function initPag() {
+  var tD=DATA.reduce(function(a,r){return a+(gDov(r)||0);},0);
+  var tV=DATA.reduce(function(a,r){return a+(gVer(r)||0);},0);
+  var tR=DATA.reduce(function(a,r){var x=gRes(r);return a+(x!==null?x:0);},0);
+  $set('p-dov',fmt(tD)); $set('p-ver',fmt(tV)); $set('p-res',fmt(tR));
+  renderPag();
+}
+
+function renderPag() {
+  var gv=function(r){
+    if(_pSort.c==='ci') return r.citta;
+    if(_pSort.c==='co') return r.condominio;
+    if(_pSort.c==='iq') return r.inquilino||'';
+    if(_pSort.c==='dv') return gDov(r)||0;
+    if(_pSort.c==='ve') return gVer(r)||0;
+    if(_pSort.c==='re') return gRes(r)||0;
+    if(_pSort.c==='st') return gSt(r);
+    return 0;
+  };
+  var rows=DATA.slice().sort(function(a,b){var av=gv(a),bv=gv(b);return av>bv?_pSort.d:av<bv?-_pSort.d:0;});
+  var tb=document.getElementById('tb-p');
+  tb.innerHTML=rows.map(function(r){
+    var cr=gRes(r),st=gSt(r);
+    var rc=cr>0?'pos':cr<0?'neg':'zer';
+    var rs=cr!==null?(cr<0?fmt(Math.abs(cr))+' CR':fmt(cr)):'\u2014';
+    return '<tr data-id="'+r.id+'">'+
+      '<td><b>'+esc(r.citta)+'</b></td>'+
+      '<td class="dim ellip">'+esc(r.condominio)+'</td>'+
+      '<td class="dim">'+esc((r.inquilino||'').split('\n')[0])+'</td>'+
+      '<td class="ra">'+(gDov(r)!=null?fmt(gDov(r)):'\u2014')+'</td>'+
+      '<td class="ra" style="color:var(--ve)">'+(gVer(r)!=null?fmt(gVer(r)):'\u2014')+'</td>'+
+      '<td class="ra '+rc+'">'+rs+'</td>'+
+      '<td>'+bdg(st)+'</td>'+
+      '<td class="dim">'+fd(r.dataScadenza)+'</td></tr>';
+  }).join('');
+  tb.querySelectorAll('tr[data-id]').forEach(function(tr){
+    tr.addEventListener('click',function(){openDrw(+tr.dataset.id);});
+  });
+}
+
+function refreshPagTotals() {
+  var tD=DATA.reduce(function(a,r){return a+(gDov(r)||0);},0);
+  var tV=DATA.reduce(function(a,r){return a+(gVer(r)||0);},0);
+  var tR=DATA.reduce(function(a,r){var x=gRes(r);return a+(x!==null?x:0);},0);
+  $set('p-dov',fmt(tD)); $set('p-ver',fmt(tV)); $set('p-res',fmt(tR));
+}
+
+// ── SCADENZE ─────────────────────────────────────────────────
+function initScad() {
+  var al=DATA.filter(function(r){
+    if(!r.dataScadenza) return false;
+    var sc=scCls(r.dataScadenza), st=gSt(r);
+    if(sc==='sc' && st!=='saldato') return true;
+    if(sc==='pr') return true;
+    if(sc==='ok' && st==='saldato') return true;
+    return false;
+  }).sort(function(a,b){return new Date(a.dataScadenza)-new Date(b.dataScadenza);});
+
+  var el=document.getElementById('al-list');
+  if(!al.length){el.innerHTML='<div class="empty">\u2705 Nessuna scadenza urgente</div>';return;}
+  el.innerHTML=al.map(function(r){
+    var sc=scCls(r.dataScadenza), st=gSt(r), sal=st==='saldato';
+    var diff=Math.round((new Date(r.dataScadenza)-TODAY)/86400000);
+    var ds=diff<0?'scaduta da '+Math.abs(diff)+' gg':'tra '+diff+' gg';
+    var cls=sal?'sal-f':(sc==='sc'?'sc':'pr');
+    var ico=sal?'\u2714\ufe0f':(sc==='sc'?'\u26a0\ufe0f':'\u23f0');
+    var cr=gRes(r);
+    return '<div class="ac '+cls+'" data-id="'+r.id+'">'+
+      '<div class="ai">'+ico+'</div>'+
+      '<div class="ab"><div class="at">'+esc(r.citta)+' \u2014 '+esc(r.condominio)+'</div>'+
+      '<div class="as">'+fd(r.dataScadenza)+' \u00b7 '+ds+' \u00b7 '+bdg(st)+'</div></div>'+
+      '<div class="aa">'+(sal?'\u2713 Saldato':cr>0?fmt(cr):'\u2014')+'</div></div>';
+  }).join('');
+  el.querySelectorAll('[data-id]').forEach(function(d){
+    d.addEventListener('click',function(){openDrw(+d.dataset.id);});
+  });
+}
+
+// ── ANALISI COSTI ────────────────────────────────────────────
+function initCosti() {
+  var wd=DATA.filter(function(r){return gDov(r)!=null&&gDov(r)>0;});
+  if(!wd.length){ $set('c-chart','<div class="empty">Nessun dato disponibile</div>'); return; }
+  var tot=wd.reduce(function(a,r){return a+gDov(r);},0);
+  var med=tot/wd.length;
+  var wr=[];
+  wd.forEach(function(r){var m=gMill(r);if(m>0)wr.push({r:r,m:m,rt:gDov(r)/m});});
+  var avg=wr.length?wr.reduce(function(a,x){return a+x.rt;},0)/wr.length:1;
+  var mn=wd.slice().sort(function(a,b){return gDov(a)-gDov(b);})[0];
+
+  $set('c-tot', fmt(tot)); $set('c-med', fmt(med));
+  $set('c-mill', '\u20AC\u00a0'+avg.toFixed(2).replace('.',','));
+  $set('c-mnc', mn?mn.citta:'\u2014');
+  $set('c-mnv', mn?fmt(gDov(mn)):'\u2014');
+
+  var sb=avg*.7, sa=avg*1.3;
+  function gc(x){return x>sa?'var(--ro)':x<sb?'var(--ve)':'var(--ar)';}
+  function gl(x){return x>sa?'\u2b06 Alta':x<sb?'\u2b07 Efficiente':'\u27a1 Norma';}
+
+  $set('c-leg',
+    '<span class="leg"><span class="ldot" style="background:var(--ve)"></span>Efficiente</span>'+
+    '<span class="leg"><span class="ldot" style="background:var(--ar)"></span>Nella norma</span>'+
+    '<span class="leg"><span class="ldot" style="background:var(--ro)"></span>Alta spesa</span>'+
+    '<span style="font-size:11px;color:var(--me);margin-left:8px">Media: \u20AC\u00a0'+avg.toFixed(2).replace('.',',')+'/mm</span>'
+  );
+
+  var cr=wr.slice().sort(function(a,b){return b.rt-a.rt;}), mx=cr.length?cr[0].rt:1;
+  var cc=document.getElementById('c-chart');
+  cc.innerHTML='<div class="cgridh">'+
+    '<div style="font-size:10px;font-weight:700;color:var(--me);text-transform:uppercase">Citt\u00e0</div>'+
+    '<div style="font-size:10px;font-weight:700;color:var(--me);text-transform:uppercase">Indice</div>'+
+    '<div style="font-size:10px;font-weight:700;color:var(--me);text-align:right;text-transform:uppercase">\u20AC/mm</div>'+
+    '<div style="font-size:10px;font-weight:700;color:var(--me);text-transform:uppercase">Dovuto</div></div>'+
+    cr.map(function(x){
+      var p=Math.round(x.rt/mx*100), col=gc(x.rt);
+      return '<div class="crow" data-id="'+x.r.id+'">'+
+        '<div class="clbl">'+esc(x.r.citta)+'</div>'+
+        '<div class="ctrk"><div class="cbar" style="width:'+p+'%;background:'+col+'"></div></div>'+
+        '<div class="cval" style="color:'+col+'">\u20AC\u00a0'+x.rt.toFixed(2).replace('.',',')+'</div>'+
+        '<div class="cdov">'+fmt(gDov(x.r))+'</div></div>';
+    }).join('');
+  cc.querySelectorAll('[data-id]').forEach(function(el){
+    el.addEventListener('click',function(){openDrw(+el.dataset.id);});
+  });
+
+  var ar=DATA.map(function(r){var m=gMill(r),rt=(m>0&&gDov(r))?gDov(r)/m:null;return{r:r,m:m,rt:rt};})
+    .sort(function(a,b){return(b.rt||0)-(a.rt||0);});
+  var tb=document.getElementById('tb-c');
+  tb.innerHTML=ar.map(function(x){
+    var col=x.rt!==null?gc(x.rt):'var(--me)', lbl=x.rt!==null?gl(x.rt):'\u2014';
+    var vs=x.rt!==null?((x.rt-avg)/avg*100):null;
+    var mstr=x.m>0?x.m.toFixed(3).replace('.',','):x.r.millesimi.split('\n')[0];
+    return '<tr data-id="'+x.r.id+'">'+
+      '<td><b>'+esc(x.r.citta)+'</b></td>'+
+      '<td class="dim ellip">'+esc(x.r.condominio)+'</td>'+
+      '<td>'+ttag(x.r.unita)+'</td>'+
+      '<td class="ra dim">'+mstr+'</td>'+
+      '<td class="ra fw">'+(gDov(x.r)!=null?fmt(gDov(x.r)):'\u2014')+'</td>'+
+      '<td class="ra dim">'+(x.rt!==null?'\u20AC\u00a0'+x.rt.toFixed(2).replace('.',','):'\u2014')+'</td>'+
+      '<td style="font-weight:700;color:'+col+'">'+lbl+'</td>'+
+      '<td class="dim" style="color:'+col+'">'+(vs!==null?(vs>0?'+':'')+vs.toFixed(1).replace('.',',')+'\u00a0%':'\u2014')+'</td></tr>';
+  }).join('');
+  tb.querySelectorAll('tr[data-id]').forEach(function(tr){
+    tr.addEventListener('click',function(){openDrw(+tr.dataset.id);});
+  });
+}
+
+// ── AMMINISTRATORI ───────────────────────────────────────────
+function initAmm() { renderAmm(''); }
+function renderAmm(q) {
+  var lo=q.toLowerCase();
+  var data=!lo?DATA:DATA.filter(function(r){
+    return r.citta.toLowerCase().indexOf(lo)>=0||r.condominio.toLowerCase().indexOf(lo)>=0||
+      (r.amm.nome||'').toLowerCase().indexOf(lo)>=0||(r.amm.email||'').toLowerCase().indexOf(lo)>=0;
+  });
+  var h=data.map(function(r){
+    var nome=gF(r,'amm_nome'), email=gF(r,'amm_email'), pec=gF(r,'amm_pec');
+    var tel=gF(r,'amm_tel'), cell=gF(r,'amm_cell'), ind=gF(r,'amm_indirizzo');
+    if(!nome&&!email&&!pec) return '';
+    return '<div class="ammc" data-id="'+r.id+'">'+
+      '<div class="amn">'+esc(nome||'Amministratore n.d.')+'</div>'+
+      '<div class="amc">'+esc(r.citta)+' \u2014 '+esc(r.condominio)+'</div>'+
+      '<div class="amx">'+
+        (email?'<span>\u2709\ufe0f <a href="mailto:'+esc(email)+'">'+esc(email)+'</a></span>':'')+
+        (pec?'<span>\ud83d\udce8 <a href="mailto:'+esc(pec)+'">'+esc(pec)+'</a></span>':'')+
+        (tel?'<span>\ud83d\udcde '+esc(tel)+'</span>':'')+
+        (cell?'<span>\ud83d\udcf1 '+esc(cell)+'</span>':'')+
+        (ind?'<span class="dim">\ud83d\udccd '+esc(ind)+'</span>':'')+
+      '</div></div>';
+  }).join('');
+  var g=document.getElementById('amm-grid');
+  g.innerHTML=h||'<div class="empty">Nessun risultato</div>';
+  g.querySelectorAll('[data-id]').forEach(function(el){
+    el.addEventListener('click',function(){openDrw(+el.dataset.id);});
+  });
+}
+
+// ── MAPPA ────────────────────────────────────────────────────
+var _lmap=null;
+function initMappa() {
+  if(!window.L) return;
+  var cm={};
+  DATA.forEach(function(r){if(!cm[r.citta])cm[r.citta]=[];cm[r.citta].push(r);});
+
+  if(!_lmap) {
+    _lmap=L.map('lmap',{center:[42.5,12.5],zoom:6,minZoom:5,maxZoom:12});
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      {attribution:'\u00a9 OpenStreetMap contributors',maxZoom:19}).addTo(_lmap);
+    _lmap.on('popupopen',function(){
+      setTimeout(function(){
+        document.querySelectorAll('.mpbtn').forEach(function(btn){
+          var city=btn.dataset.city;
+          var recs=cm[city]||[];
+          var nb=btn.cloneNode(true);
+          btn.parentNode.replaceChild(nb,btn);
+          nb.addEventListener('click',function(){
+            if(recs.length===1) openDrw(recs[0].id);
+            else{nav('unita');renderU(recs);}
+          });
+        });
+      },30);
+    });
+  } else {
+    _lmap.eachLayer(function(l){if(l instanceof L.CircleMarker)_lmap.removeLayer(l);});
+  }
+
+  Object.keys(cm).forEach(function(city){
+    var geo=GEO[city]; if(!geo) return;
+    var recs=cm[city];
+    var hasI=recs.some(function(r){return gSt(r)==='insoluto';});
+    var haS=recs.some(function(r){return gSt(r)==='saldato';});
+    var col=hasI?'#B5282A':haS?'#1A7A4A':'#6C7A8D';
+    var tot=recs.reduce(function(a,r){var x=gRes(r);return a+(x>0?x:0);},0);
+
+    var mk=L.circleMarker([geo[0],geo[1]],{radius:9,fillColor:col,color:'#fff',weight:2,fillOpacity:.9}).addTo(_lmap);
+    var rows=recs.map(function(r){
+      var stc=gSt(r)==='insoluto'?'#B5282A':gSt(r)==='saldato'?'#1A7A4A':'#888';
+      return '<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #eee">'+
+        '<span style="font-size:12px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+
+        esc(r.condominio.replace('Condominio ',''))+'</span>'+
+        '<span style="font-size:11px;font-weight:700;color:'+stc+';margin-left:6px">'+
+        (gSt(r)==='insoluto'?'Ins.':gSt(r)==='saldato'?'Sal.':'N.D.')+'</span></div>';
+    }).join('');
+    var ph='<div style="font-family:Segoe UI,Arial,sans-serif;min-width:180px">'+
+      '<b style="font-size:14px;color:#1B3A5C">'+esc(city)+'</b><br>'+rows+
+      (tot>0?'<div style="margin-top:5px;font-size:12px;color:#B5282A;font-weight:700">Res: '+fmt(tot)+'</div>':'')+
+      '<button class="mpbtn" data-city="'+esc(city)+'" style="margin-top:8px;width:100%;background:#2B5BA1;color:#fff;border:none;border-radius:5px;padding:5px;font-size:12px;cursor:pointer;font-weight:600">Apri scheda \u2192</button>'+
+      '</div>';
+    mk.bindPopup(ph,{maxWidth:240});
+    mk.on('click',function(){mk.openPopup();});
+  });
+
+  $set('mappa-leg',
+    '<span class="leg"><span class="dot di"></span>Insoluto</span>'+
+    '<span class="leg" style="margin-left:8px"><span class="dot ds2"></span>Saldato/N.D.</span>'
+  );
+
+  var h=Object.keys(cm).sort().map(function(city){
+    var recs=cm[city];
+    var hasI2=recs.some(function(r){return gSt(r)==='insoluto';});
+    var tot2=recs.reduce(function(a,r){var x=gRes(r);return a+(x>0?x:0);},0);
+    return '<div class="mci" data-city="'+esc(city)+'">'+
+      '<span class="dot '+(hasI2?'di':'ds2')+'"></span>'+
+      '<div><div class="mcn">'+esc(city)+'</div>'+
+      '<div class="mcc">'+esc(recs.map(function(r){return r.condominio.replace('Condominio ','');}).join(', ').substring(0,45))+'</div></div>'+
+      '<div style="font-size:11.5px;flex-shrink:0">'+(tot2>0?'<span class="pos">'+fmt(tot2)+'</span>':recs.length+' un.')+'</div></div>';
+  }).join('');
+  $set('mappa-list', h);
+  document.getElementById('mappa-list').querySelectorAll('[data-city]').forEach(function(el){
+    el.addEventListener('click',function(){
+      var city=el.dataset.city, geo2=GEO[city], recs=cm[city]||[];
+      if(geo2) _lmap.setView([geo2[0],geo2[1]],10);
+      if(recs.length===1) openDrw(recs[0].id);
+      else{nav('unita');renderU(recs);}
+    });
+  });
+  setTimeout(function(){if(_lmap)_lmap.invalidateSize();},150);
+}
+
+// ── CATASTALE ────────────────────────────────────────────────
+function initCat() {
+  var cnt={app:0,uff:0,box:0,can:0,neg:0,sof:0};
+  DATA.forEach(function(r){
+    var u=r.unita.toLowerCase();
+    if(u.indexOf('appartam')>=0)cnt.app++;
+    if(u.indexOf('ufficio')>=0||u.indexOf('studio')>=0)cnt.uff++;
+    if(u.indexOf('box')>=0||u.indexOf('p.a.')>=0||u.indexOf('p.m.')>=0)cnt.box++;
+    if(u.indexOf('cantina')>=0)cnt.can++;
+    if(u.indexOf('negozio')>=0)cnt.neg++;
+    if(u.indexOf('soffitta')>=0)cnt.sof++;
+  });
+  $set('kpi-tipi', [['Appartamenti',cnt.app,'b'],['Uffici',cnt.uff,'g'],['Box/Auto',cnt.box,'a'],
+    ['Cantine',cnt.can,''],['Negozi',cnt.neg,'r'],['Soffitte',cnt.sof,'']
+  ].filter(function(t){return t[1]>0;}).map(function(t){
+    return '<div class="kpi '+t[2]+'"><div class="kl">'+t[0]+'</div><div class="kv">'+t[1]+'</div></div>';
+  }).join(''));
+
+  var grid=document.getElementById('cat-grid');
+  grid.innerHTML=DATA.map(function(r){
+    var d=CAT[r.id]||{};
+    var hasD=Object.keys(d).some(function(k){return d[k]&&String(d[k]).trim();});
+    function ci(f,pl){
+      return '<div class="cfg"><div class="cfl">'+pl+'</div>'+
+        '<input class="cfi" data-id="'+r.id+'" data-f="'+f+'" value="'+esc(d[f]||'')+'" placeholder="'+pl+'"></div>';
+    }
+    return '<div class="ccard'+(hasD?' filled':'')+'">'+
+      '<div class="cchdr"><div class="cccity">'+esc(r.citta)+'</div>'+
+      '<div class="cccond">'+esc(r.condominio)+'</div>'+
+      '<div style="margin-top:3px">'+ttag(r.unita)+'</div></div>'+
+      '<div class="ccf">'+
+        ci('comune','Comune catasto')+ci('foglio','Foglio')+
+        ci('particella','Particella')+ci('sub','Sub')+
+        ci('categoria','Categoria (A/2)')+ci('classe','Classe')+
+        ci('consistenza','Consistenza')+ci('rendita','Rendita \u20AC')+
+      '</div>'+
+      '<button class="ccbtn" data-id="'+r.id+'">Apri scheda \u2192</button></div>';
+  }).join('');
+  grid.querySelectorAll('.cfi').forEach(function(inp){
+    inp.addEventListener('change',function(){
+      var id=inp.dataset.id,f=inp.dataset.f;
+      if(!CAT[id])CAT[id]={};
+      CAT[id][f]=inp.value; svCAT();
+      inp.closest('.ccard').classList.add('filled');
+      toast('\u2705 Salvato','ok');
+    });
+  });
+  grid.querySelectorAll('.ccbtn').forEach(function(btn){
+    btn.addEventListener('click',function(){openDrw(+btn.dataset.id);});
+  });
+}
+
+// ── INQUILINI ────────────────────────────────────────────────
+function initInq() { renderInq(); $on('btn-inq',function(){showInqForm(null);}); }
+function renderInq() {
+  var el=document.getElementById('inq-list');
+  var h=Object.keys(INQ).map(function(k){
+    var i=INQ[k];
+    return '<div class="ci-card" data-inq="'+k+'">'+
+      '<div class="ci-ico">\ud83d\udc64</div>'+
+      '<div class="ci-bod"><div class="ci-t">'+esc((i.nome||'')+' '+(i.cognome||''))+'</div>'+
+      '<div class="ci-s">'+esc(i.unita||'')+' \u00b7 '+esc(i.metodoPag||'')+'</div></div>'+
+      '<button class="ci-del" data-dk="'+k+'">\u2715</button></div>';
+  }).join('');
+  el.innerHTML=h||'<div class="empty">Nessun inquilino. Clicca "+ Nuovo" per aggiungere.</div>';
+  el.querySelectorAll('[data-inq]').forEach(function(el2){
+    el2.addEventListener('click',function(e){if(!e.target.closest('[data-dk]'))showInqForm(el2.dataset.inq);});
+  });
+  el.querySelectorAll('[data-dk]').forEach(function(btn){
+    btn.addEventListener('click',function(e){
+      e.stopPropagation();
+      if(confirm('Eliminare questo inquilino?')){delete INQ[btn.dataset.dk];svINQ();renderInq();toast('Eliminato','ok');}
+    });
+  });
+}
+function showInqForm(k) {
+  var i=k?INQ[k]||{}:{};
+  var opts=DATA.map(function(r){return '<option value="'+r.id+'"'+(String(i.unitaId)===String(r.id)?' selected':'')+'>'+esc(r.citta+' \u2014 '+r.condominio)+'</option>';}).join('');
+  var pOpts=['Bonifico','RID/SDD','MAV','Assegno','Contante'].map(function(v){return '<option'+(i.metodoPag===v?' selected':'')+'>'+v+'</option>';}).join('');
+  var fp=document.getElementById('inq-form'); fp.style.display='block';
+  fp.innerHTML='<div class="fhdr"><b>'+(k?'Modifica':'Nuovo')+' Inquilino</b><button class="btn-rst" id="ifc">Chiudi</button></div>'+
+    '<div class="fgrid">'+
+    fgi('Nome','ino',i.nome)+fgi('Cognome','icg',i.cognome)+
+    fgi('Codice Fiscale','icf',i.cf)+fgi('Data nascita','idn',i.dataNascita,'date')+
+    fgi('Telefono','ite',i.tel)+fgi('Email','iem',i.email)+fgi('Documento','ido',i.documento)+
+    '<div class="fg full"><div class="fl">Unit\u00e0</div><select class="fi" id="iun"><option value="">-- Seleziona --</option>'+opts+'</select></div>'+
+    '<div class="fg"><div class="fl">Metodo pagamento</div><select class="fi" id="imp"><option value="">--</option>'+pOpts+'</select></div>'+
+    fgi('IBAN','iib',i.iban)+
+    '<div class="fg full"><div class="fl">Note</div><textarea class="fi fta" id="int">'+esc(i.note||'')+'</textarea></div>'+
+    '</div><div class="fbtns"><button class="btn-add" id="isv">Salva</button>'+(k?'<button class="btn-del" id="ide">Elimina</button>':'')+'</div>';
+  $on('ifc',function(){fp.style.display='none';});
+  $on('isv',function(){
+    var id2=k||String(Date.now()), uId=$v('iun');
+    var r2=DATA.find(function(r){return String(r.id)===uId;});
+    INQ[id2]={nome:$v('ino'),cognome:$v('icg'),cf:$v('icf'),dataNascita:$v('idn'),
+      tel:$v('ite'),email:$v('iem'),documento:$v('ido'),unitaId:uId,
+      unita:r2?r2.citta+' \u2014 '+r2.condominio:'',
+      metodoPag:$v('imp'),iban:$v('iib'),note:$v('int')};
+    svINQ(); fp.style.display='none'; renderInq(); toast('\u2705 Salvato','ok');
+  });
+  if(k){$on('ide',function(){if(confirm('Eliminare?')){delete INQ[k];svINQ();fp.style.display='none';renderInq();toast('Eliminato','ok');}});}
+}
+function fgi(lbl,id,val,type){return '<div class="fg"><div class="fl">'+lbl+'</div><input class="fi" id="'+id+'" type="'+(type||'text')+'" value="'+esc(val||'')+'"></div>';}
+
+// ── ASSEMBLEE ────────────────────────────────────────────────
+function initAsm() { renderAsm(); buildCal('asm-cal-g','asm-cal-l'); $on('btn-asm',function(){showAsmForm(null);}); }
+function renderAsm() {
+  var s=ASM.slice().sort(function(a,b){return new Date(a.data)-new Date(b.data);});
+  var fut=s.filter(function(a){return a.data&&new Date(a.data)>=TODAY;});
+  var pas=s.filter(function(a){return !a.data||new Date(a.data)<TODAY;}).reverse();
+  var h='';
+  if(fut.length) h+='<div class="sl">In programma</div>'+fut.map(asmCard).join('');
+  if(pas.length) h+='<div class="sl" style="margin-top:12px">Passate</div>'+pas.map(asmCard).join('');
+  var el=document.getElementById('asm-list');
+  el.innerHTML=h||'<div class="empty">Nessuna assemblea registrata.</div>';
+  el.querySelectorAll('[data-asm]').forEach(function(el2){
+    el2.addEventListener('click',function(e){if(!e.target.closest('[data-da]'))showAsmForm(el2.dataset.asm);});
+  });
+  el.querySelectorAll('[data-da]').forEach(function(btn){
+    btn.addEventListener('click',function(e){
+      e.stopPropagation();
+      if(confirm('Eliminare?')){
+        ASM=ASM.filter(function(a){return String(a.id)!==btn.dataset.da;});
+        svASM(); renderAsm(); buildCal('cal-g','cal-l'); buildCal('asm-cal-g','asm-cal-l'); initDash(); toast('Eliminata','ok');
+      }
+    });
+  });
+}
+function asmCard(a){
+  var fut=a.data&&new Date(a.data)>=TODAY;
+  return '<div class="ci-card" data-asm="'+a.id+'">'+
+    '<div class="ci-ico">'+(fut?'\ud83d\udcc5':'\ud83d\udccc')+'</div>'+
+    '<div class="ci-bod"><div class="ci-t">'+esc(a.condominio||'')+'</div>'+
+    '<div class="ci-s">'+fd(a.data)+' \u00b7 '+esc(a.tipo||'')+(a.odg?' \u00b7 '+esc(a.odg.substring(0,35)):'')+'</div></div>'+
+    '<button class="ci-del" data-da="'+a.id+'">\u2715</button></div>';
+}
+function showAsmForm(k){
+  var a=k?(ASM.find(function(x){return String(x.id)===k;})||{}):{};
+  var cOpts=DATA.map(function(r){return '<option value="'+esc(r.condominio)+'"'+(a.condominio===r.condominio?' selected':'')+'>'+esc(r.citta+' \u2014 '+r.condominio)+'</option>';}).join('');
+  var fp=document.getElementById('asm-form'); fp.style.display='block';
+  fp.innerHTML='<div class="fhdr"><b>'+(k?'Modifica':'Nuova')+' Assemblea</b><button class="btn-rst" id="afc">Chiudi</button></div>'+
+    '<div class="fgrid">'+
+    fgi('Data','adt',a.data,'date')+
+    '<div class="fg"><div class="fl">Tipo</div><select class="fi" id="atp"><option'+(a.tipo==='Ordinaria'?' selected':'')+'>Ordinaria</option><option'+(a.tipo==='Straordinaria'?' selected':'')+'>Straordinaria</option></select></div>'+
+    '<div class="fg full"><div class="fl">Condominio</div><select class="fi" id="aco"><option value="">-- Seleziona --</option>'+cOpts+'</select></div>'+
+    '<div class="fg full"><div class="fl">Ordine del giorno</div><textarea class="fi fta" id="aod">'+esc(a.odg||'')+'</textarea></div>'+
+    '<div class="fg full"><div class="fl">Delibere</div><textarea class="fi fta" id="ade">'+esc(a.delibere||'')+'</textarea></div>'+
+    '</div><div class="fbtns"><button class="btn-add" id="asv">Salva</button>'+(k?'<button class="btn-del" id="adl">Elimina</button>':'')+'</div>';
+  $on('afc',function(){fp.style.display='none';});
+  $on('asv',function(){
+    var obj={id:k?+k:nxId(ASM),data:$v('adt'),tipo:$v('atp'),condominio:$v('aco'),odg:$v('aod'),delibere:$v('ade')};
+    if(k) ASM=ASM.map(function(x){return String(x.id)===k?obj:x;}); else ASM.push(obj);
+    svASM(); fp.style.display='none'; renderAsm(); buildCal('cal-g','cal-l'); buildCal('asm-cal-g','asm-cal-l'); initDash(); toast('\u2705 Salvata','ok');
+  });
+  if(k){$on('adl',function(){if(confirm('Eliminare?')){ASM=ASM.filter(function(x){return String(x.id)!==k;});svASM();fp.style.display='none';renderAsm();buildCal('cal-g','cal-l');initDash();toast('Eliminata','ok');}});}
+}
+
+// ── TECNICO ──────────────────────────────────────────────────
+function initTec() { renderLav(); renderMnt(); $on('btn-lav',function(){showLavForm(null);}); $on('btn-mnt',function(){showMntForm(null);}); }
+function renderLav() {
+  var el=document.getElementById('lav-list');
+  var h=LAV.map(function(l){
+    var r2=DATA.find(function(r){return String(r.id)===String(l.condId);});
+    var con=r2?r2.citta+' \u2014 '+r2.condominio:'';
+    var sc2={attesa:'var(--me)',inCorso:'var(--ar)',completato:'var(--ve)'}[l.stato]||'var(--me)';
+    return '<div class="ci-card" data-lav="'+l.id+'">'+
+      '<div class="ci-ico">\ud83d\udee0\ufe0f</div>'+
+      '<div class="ci-bod"><div class="ci-t">'+esc(l.tipo||'')+'</div>'+
+      '<div class="ci-s">'+esc(con)+' \u00b7 Del. '+fd(l.dataDelib)+(l.importo?' \u00b7 '+fmt(+l.importo):'')+'</div></div>'+
+      '<div style="text-align:right;flex-shrink:0"><span style="font-size:11px;font-weight:700;color:'+sc2+'">'+esc(l.stato||'')+'</span>'+
+      '<br><button class="ci-del" data-dl="'+l.id+'">\u2715</button></div></div>';
+  }).join('');
+  el.innerHTML=h||'<div class="empty">Nessun lavoro registrato.</div>';
+  el.querySelectorAll('[data-lav]').forEach(function(el2){el2.addEventListener('click',function(e){if(!e.target.closest('[data-dl]'))showLavForm(el2.dataset.lav);});});
+  el.querySelectorAll('[data-dl]').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();if(confirm('Eliminare?')){LAV=LAV.filter(function(x){return String(x.id)!==btn.dataset.dl;});svLAV();renderLav();toast('Eliminato','ok');}});});
+}
+function showLavForm(k){
+  var l=k?(LAV.find(function(x){return String(x.id)===k;})||{}):{};
+  var cOpts=DATA.map(function(r){return '<option value="'+r.id+'"'+(String(l.condId)===String(r.id)?' selected':'')+'>'+esc(r.citta+' \u2014 '+r.condominio)+'</option>';}).join('');
+  var fp=document.getElementById('lav-form'); fp.style.display='block';
+  fp.innerHTML='<div class="fhdr"><b>'+(k?'Modifica':'Nuovo')+' Lavoro Straordinario</b><button class="btn-rst" id="lfc">Chiudi</button></div>'+
+    '<div class="fgrid">'+
+    '<div class="fg full"><div class="fl">Condominio</div><select class="fi" id="lco"><option value="">-- Seleziona --</option>'+cOpts+'</select></div>'+
+    '<div class="fg full">'+fgi('Tipo lavoro','lti',l.tipo)+'</div>'+
+    fgi('Data delibera','ldt',l.dataDelib,'date')+fgi('Importo quota Cassa (\u20AC)','lim',l.importo)+
+    '<div class="fg"><div class="fl">Stato</div><select class="fi" id="lst"><option value="attesa"'+(l.stato==='attesa'?' selected':'')+'>In attesa</option><option value="inCorso"'+(l.stato==='inCorso'?' selected':'')+'>In corso</option><option value="completato"'+(l.stato==='completato'?' selected':'')+'>Completato</option></select></div>'+
+    '<div class="fg full"><div class="fl">Note</div><textarea class="fi fta" id="lnt">'+esc(l.note||'')+'</textarea></div>'+
+    '</div><div class="fbtns"><button class="btn-add" id="lsv">Salva</button>'+(k?'<button class="btn-del" id="lde">Elimina</button>':'')+'</div>';
+  $on('lfc',function(){fp.style.display='none';});
+  $on('lsv',function(){var obj={id:k?+k:nxId(LAV),condId:$v('lco'),tipo:$v('lti'),dataDelib:$v('ldt'),importo:$v('lim'),stato:$v('lst'),note:$v('lnt')};if(k)LAV=LAV.map(function(x){return String(x.id)===k?obj:x;});else LAV.push(obj);svLAV();fp.style.display='none';renderLav();toast('\u2705 Salvato','ok');});
+  if(k){$on('lde',function(){if(confirm('Eliminare?')){LAV=LAV.filter(function(x){return String(x.id)!==k;});svLAV();fp.style.display='none';renderLav();toast('Eliminato','ok');}});}
+}
+function renderMnt() {
+  var el=document.getElementById('mnt-list');
+  var h=MNT.map(function(m){
+    var r2=DATA.find(function(r){return String(r.id)===String(m.condId);});
+    var con=r2?r2.citta+' \u2014 '+r2.condominio:'';
+    var pc={alta:'var(--ro)',media:'var(--ar)',bassa:'var(--ve)'}[m.priorita]||'var(--me)';
+    return '<div class="ci-card" data-mnt="'+m.id+'">'+
+      '<div class="ci-ico">\ud83d\udd27</div>'+
+      '<div class="ci-bod"><div class="ci-t">'+esc(m.desc||'')+'</div>'+
+      '<div class="ci-s">'+esc(con)+' \u00b7 '+fd(m.data)+'</div></div>'+
+      '<div style="text-align:right;flex-shrink:0"><span style="font-size:11px;font-weight:700;color:'+pc+'">'+esc(m.priorita||'')+'</span>'+
+      '<br><button class="ci-del" data-dm="'+m.id+'">\u2715</button></div></div>';
+  }).join('');
+  el.innerHTML=h||'<div class="empty">Nessuna richiesta registrata.</div>';
+  el.querySelectorAll('[data-mnt]').forEach(function(el2){el2.addEventListener('click',function(e){if(!e.target.closest('[data-dm]'))showMntForm(el2.dataset.mnt);});});
+  el.querySelectorAll('[data-dm]').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();if(confirm('Eliminare?')){MNT=MNT.filter(function(x){return String(x.id)!==btn.dataset.dm;});svMNT();renderMnt();toast('Eliminata','ok');}});});
+}
+function showMntForm(k){
+  var m=k?(MNT.find(function(x){return String(x.id)===k;})||{}):{};
+  var cOpts=DATA.map(function(r){return '<option value="'+r.id+'"'+(String(m.condId)===String(r.id)?' selected':'')+'>'+esc(r.citta+' \u2014 '+r.condominio)+'</option>';}).join('');
+  var fp=document.getElementById('mnt-form'); fp.style.display='block';
+  fp.innerHTML='<div class="fhdr"><b>'+(k?'Modifica':'Nuova')+' Manutenzione</b><button class="btn-rst" id="mfc">Chiudi</button></div>'+
+    '<div class="fgrid">'+
+    '<div class="fg full"><div class="fl">Condominio</div><select class="fi" id="mco"><option value="">-- Seleziona --</option>'+cOpts+'</select></div>'+
+    '<div class="fg full"><div class="fl">Descrizione</div><textarea class="fi fta" id="mde">'+esc(m.desc||'')+'</textarea></div>'+
+    fgi('Data','mdt',m.data,'date')+
+    '<div class="fg"><div class="fl">Priorit\u00e0</div><select class="fi" id="mpr"><option value="bassa"'+(m.priorita==='bassa'?' selected':'')+'>Bassa</option><option value="media"'+(m.priorita==='media'?' selected':'')+'>Media</option><option value="alta"'+(m.priorita==='alta'?' selected':'')+'>Alta</option></select></div>'+
+    '<div class="fg"><div class="fl">Stato</div><select class="fi" id="mst"><option value="aperta"'+(m.stato==='aperta'?' selected':'')+'>Aperta</option><option value="inCorso"'+(m.stato==='inCorso'?' selected':'')+'>In corso</option><option value="chiusa"'+(m.stato==='chiusa'?' selected':'')+'>Chiusa</option></select></div>'+
+    '</div><div class="fbtns"><button class="btn-add" id="msv">Salva</button>'+(k?'<button class="btn-del" id="mde2">Elimina</button>':'')+'</div>';
+  $on('mfc',function(){fp.style.display='none';});
+  $on('msv',function(){var obj={id:k?+k:nxId(MNT),condId:$v('mco'),desc:$v('mde'),data:$v('mdt'),priorita:$v('mpr'),stato:$v('mst')};if(k)MNT=MNT.map(function(x){return String(x.id)===k?obj:x;});else MNT.push(obj);svMNT();fp.style.display='none';renderMnt();toast('\u2705 Salvata','ok');});
+  if(k){$on('mde2',function(){if(confirm('Eliminare?')){MNT=MNT.filter(function(x){return String(x.id)!==k;});svMNT();fp.style.display='none';renderMnt();toast('Eliminata','ok');}});}
+}
+
+// ── DRAWER ───────────────────────────────────────────────────
+function openDrw(id) {
+  var r=DATA.find(function(d){return d.id===id;}); if(!r) return;
+  var sid=String(id), ed=ED[sid]||{}, cat=CAT[sid]||{};
+  var hasEd=Object.keys(ed).length>0;
+
+  function ef(f,ta){
+    var v=esc(String(gF(r,f)||''));
+    var ch=ed[f]!==undefined?' ch':'';
+    if(ta) return '<textarea class="ef'+ch+' efta" data-rid="'+sid+'" data-f="'+f+'" rows="4">'+v+'</textarea>';
+    return '<input class="ef'+ch+'" data-rid="'+sid+'" data-f="'+f+'" value="'+v+'">';
+  }
+  function ecat(f,pl){
+    return '<input class="ef" data-cat="'+sid+'" data-cf="'+f+'" value="'+esc(cat[f]||'')+'" placeholder="'+pl+'">';
+  }
+
+  var res=gRes(r), st=gSt(r), dov=gDov(r), ver=gVer(r);
+  var rCls=res>0?'rp':res<0?'rn':'rz';
+  var rLbl=res<0?'Credito Cassa':res>0?'Residuo':'Saldato';
+  var sc2=r.dataScadenza?scCls(r.dataScadenza):null;
+  var scStr=sc2==='sc'?'<span class="chs">SCADUTA</span>':sc2==='pr'?'<span class="chp">In scadenza</span>':sc2==='ok'?'<span class="chok">Regolare</span>':'';
+
+  document.getElementById('d-city').textContent=r.citta;
+  document.getElementById('d-name').textContent=r.condominio+(hasEd?' \u270f':'');
+
+  var body=
+    '<div class="ds"><div class="dsh"><span class="dst">Anagrafica</span>'+
+      (hasEd?'<button class="btn-rst" id="d-rst">\u21a9 Originali</button>':'')+
+    '</div><div class="dl">'+
+      '<div class="dt">Unit\u00e0</div><div class="dd">'+ef('unita')+'</div>'+
+      '<div class="dt">Millesimi</div><div class="dd">'+ef('millesimi')+'</div>'+
+      '<div class="dt">Inquilino</div><div class="dd">'+ef('inquilino')+'</div>'+
+      '<div class="dt">Ripartizione</div><div class="dd">'+ef('ripartizione')+'</div>'+
+      '<div class="dt">Periodo</div><div class="dd">'+ef('periodoGestione')+'</div>'+
+      '<div class="dt">Stato</div><div class="dd">'+bdg(st)+(isDV(r)?'<span class="chv">DA VER.</span>':'')+'</div>'+
+    '</div></div>'+
+
+    '<div class="ds"><div class="dsh"><span class="dst">Pagamenti</span>'+
+      '<span style="font-size:10px;color:var(--me)">Modifica importi direttamente</span></div>'+
+    '<div class="prow">'+
+      '<div class="pbox dov"><div class="pl">Dovuto</div>'+
+        '<input class="ef pvinp" data-rid="'+sid+'" data-f="dovuto" value="'+esc(String(dov!=null?dov:''))+'" placeholder="0,00"></div>'+
+      '<div class="pbox ver"><div class="pl">Versato</div>'+
+        '<input class="ef pvinp" data-rid="'+sid+'" data-f="versato" value="'+esc(String(ver!=null?ver:''))+'" placeholder="0,00"></div>'+
+      '<div class="pbox '+rCls+'"><div class="pl">'+rLbl+' (calc.)</div>'+
+        '<div class="pv" id="d-res">'+(res!==null?fmt(Math.abs(res)):'\u2014')+'</div></div>'+
+    '</div>'+
+    (r.dataScadenza?'<div style="font-size:12px;color:var(--me);margin-top:6px">\ud83d\udcc5 '+fd(r.dataScadenza)+' '+scStr+'</div>':'')+
+    '</div>'+
+
+    '<div class="ds"><div class="dsh"><span class="dst">Storico comunicazioni</span></div>'+
+      ef('info',true)+
+    '</div>'+
+
+    '<div class="ds"><div class="dsh"><span class="dst">Amministratore</span></div><div class="dl">'+
+      '<div class="dt">Nome</div><div class="dd">'+ef('amm_nome')+'</div>'+
+      '<div class="dt">Email</div><div class="dd">'+ef('amm_email')+'</div>'+
+      '<div class="dt">PEC</div><div class="dd">'+ef('amm_pec')+'</div>'+
+      '<div class="dt">Telefono</div><div class="dd">'+ef('amm_tel')+'</div>'+
+      '<div class="dt">Cellulare</div><div class="dd">'+ef('amm_cell')+'</div>'+
+      '<div class="dt">Indirizzo</div><div class="dd">'+ef('amm_indirizzo')+'</div>'+
+    '</div></div>'+
+
+    '<div class="ds"><div class="dsh"><span class="dst">\ud83c\udfdb Dati Catastali</span></div><div class="dl">'+
+      '<div class="dt">Comune</div><div class="dd">'+ecat('comune','Comune catasto')+'</div>'+
+      '<div class="dt">Foglio</div><div class="dd">'+ecat('foglio','Foglio')+'</div>'+
+      '<div class="dt">Particella</div><div class="dd">'+ecat('particella','Particella')+'</div>'+
+      '<div class="dt">Sub</div><div class="dd">'+ecat('sub','Sub')+'</div>'+
+      '<div class="dt">Categoria</div><div class="dd">'+ecat('categoria','A/2')+'</div>'+
+      '<div class="dt">Classe</div><div class="dd">'+ecat('classe','3')+'</div>'+
+      '<div class="dt">Consistenza</div><div class="dd">'+ecat('consistenza','vani')+'</div>'+
+      '<div class="dt">Rendita</div><div class="dd">'+ecat('rendita','\u20AC 0,00')+'</div>'+
+    '</div><div style="font-size:11px;color:var(--me);margin-top:5px">\u270f Tutti i campi si salvano automaticamente</div></div>';
+
+  var db=document.getElementById('d-body');
+  db.innerHTML=body;
+
+  db.querySelectorAll('.ef[data-rid],.efta[data-rid]').forEach(function(inp){
+    inp.addEventListener('change',function(){
+      if(!ED[sid])ED[sid]={};
+      ED[sid][inp.dataset.f]=inp.value;
+      svED(); inp.classList.add('ch');
+      document.getElementById('d-name').textContent=r.condominio+' \u270f';
+      if(inp.dataset.f==='dovuto'||inp.dataset.f==='versato'){
+        var nr=gRes(r);
+        var re=document.getElementById('d-res');
+        if(re) re.textContent=nr!==null?fmt(Math.abs(nr)):'\u2014';
+        refreshPagTotals(); renderPag(); renderU(_ud); initDash();
+      }
+      toast('\u2705 Salvato','ok');
+    });
+  });
+
+  db.querySelectorAll('.ef[data-cat]').forEach(function(inp){
+    inp.addEventListener('change',function(){
+      if(!CAT[sid])CAT[sid]={};
+      CAT[sid][inp.dataset.cf]=inp.value; svCAT();
+      toast('\u2705 Catastale salvato','ok');
+    });
+  });
+
+  var rb=document.getElementById('d-rst');
+  if(rb) rb.addEventListener('click',function(){delete ED[sid];svED();openDrw(id);toast('\u21a9 Originali ripristinati','ok');});
+
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('drawer').classList.add('open');
+}
+function closeDrw(){
+  document.getElementById('overlay').classList.remove('open');
+  document.getElementById('drawer').classList.remove('open');
+}
+
+// ── IMPORT EXCEL ─────────────────────────────────────────────
+function initImport(){
+  $on('btn-imp-open',function(){document.getElementById('imp-ov').classList.add('open');});
+  $on('imp-cancel',function(){document.getElementById('imp-ov').classList.remove('open');});
+  var dz=document.getElementById('dz');
+  dz.addEventListener('click',function(){document.getElementById('file-in').click();});
+  dz.addEventListener('dragover',function(e){e.preventDefault();dz.classList.add('over');});
+  dz.addEventListener('dragleave',function(){dz.classList.remove('over');});
+  dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('over');if(e.dataTransfer.files[0])doXL(e.dataTransfer.files[0]);});
+  document.getElementById('file-in').addEventListener('change',function(){if(this.files[0])doXL(this.files[0]);this.value='';});
+}
+function doXL(file){
+  toast('Caricamento\u2026','');
+  var rd=new FileReader();
+  rd.onload=function(e){
+    try{
+      if(!window.XLSX){toast('\u274c XLSX non disponibile','err');return;}
+      var wb=XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:true});
+      var sn=wb.SheetNames[wb.SheetNames.length-1];
+      var rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{defval:null});
+      if(!rows.length){toast('\u26a0 Nessun dato','err');return;}
+      var parsed=parseXL(rows);
+      if(!parsed.length){toast('\u26a0 Struttura non riconosciuta','err');return;}
+      DATA.length=0; parsed.forEach(function(r){DATA.push(r);});
+      refreshAll();
+      document.getElementById('imp-ov').classList.remove('open');
+      $set('foot-date','Aggiornato '+new Date().toLocaleDateString('it-IT'));
+      $set('foot-n',DATA.length+' unit\u00e0');
+      toast('\u2705 '+DATA.length+' unit\u00e0 caricate','ok');
+    }catch(err){toast('\u274c '+err.message,'err');}
+  };
+  rd.readAsArrayBuffer(file);
+}
+function parseXL(rows){
+  var res=[],id=1;
+  rows.forEach(function(row){
+    var ci=null;
+    Object.keys(row).forEach(function(k){if(k.toLowerCase().indexOf('citt')>=0&&!ci)ci=row[k];});
+    if(!ci||typeof ci!=='string'||!ci.trim())return;
+    var ar=String(row['Amministratore']||'');
+    var am={nome:'',email:'',pec:'',indirizzo:'',tel:'',cell:''};
+    ar.split('\n').forEach(function(l){l=l.trim();
+      if(l.indexOf('Amm:')===0)am.nome=l.slice(4).trim();
+      else if(l.indexOf('Email:')===0)am.email=l.slice(6).trim();
+      else if(l.indexOf('Pec:')===0)am.pec=l.slice(4).trim();
+      else if(l.indexOf('Indirizzo:')===0)am.indirizzo=l.slice(10).trim();
+      else if(l.indexOf('Tel:')===0)am.tel=l.slice(4).trim();
+      else if(l.indexOf('Cell:')===0)am.cell=l.slice(5).trim();
+    });
+    var dov=toN(row['Dovuto']),ver=toN(row['Versato']||row['PAGATO']);
+    var dr=row['Data riferita al dovuto'],ds=null;
+    if(dr){try{ds=new Date(dr).toISOString().slice(0,10);}catch(x){}}
+    res.push({id:id++,citta:ci.trim(),
+      condominio:String(row['Condominio']||'').trim(),
+      unita:String(row['Unit\u00e0']||'').trim(),
+      millesimi:String(row['mm. Tab. Propriet\u00e0']||'').trim(),
+      inquilino:String(row['Inquilino']||'').trim(),
+      periodoGestione:String(row['Periodo di Gestione']||'').trim(),
+      ripartizione:String(row['Ripartizione']||'').trim(),
+      dovuto:dov,versato:ver,residuo:null,dataScadenza:ds,status:'nd',
+      info:String(row['INFO']||'').trim(),amm:am});
+  });
+  return res;
+}
+function toN(v){if(v==null||v==='')return null;var n=parseFloat(String(v).replace(',','.'));return isNaN(n)?null:n;}
+
+// ── BOOT ─────────────────────────────────────────────────────
+function refreshAll(){
+  initDash(); filtU('all'); initPag(); initScad(); initCosti();
+  initAmm(); initCat(); initInq(); initAsm(); initTec();
+}
+
+window.addEventListener('DOMContentLoaded',function(){
+  // Nav
+  Object.keys(PTITLES).forEach(function(id){
+    var el=document.getElementById('ni-'+id);
+    if(el) el.addEventListener('click',function(){nav(id);});
+  });
+  // KPI cards
+  $on('kpi-tot',function(){nav('unita');filtU('all');});
+  $on('kpi-ins',function(){nav('unita');filtU('insoluto');});
+  $on('kpi-sal',function(){nav('unita');filtU('saldato');});
+  $on('kpi-dv', function(){nav('unita');renderU(DATA.filter(isDV));});
+  $on('kpi-asm',function(){nav('assemblee');});
+  // Cal nav
+  $on('cal-prev',function(){calNav(-1);});
+  $on('cal-next',function(){calNav(1);});
+  $on('asm-cal-prev',function(){calNav(-1);});
+  $on('asm-cal-next',function(){calNav(1);});
+  // Unita sort
+  ['ci','co','un','iq','ri','st','dv','re','sc'].forEach(function(c){
+    var th=document.getElementById('sh-'+c);
+    if(th) th.addEventListener('click',function(){sortU(c);});
+  });
+  // Unita filter
+  ['all','insoluto','saldato','credito','nd','fitto','sfitto'].forEach(function(f){$on('fb-'+f,function(){filtU(f);});});
+  // Pag sort
+  ['ci','co','iq','dv','ve','re','st'].forEach(function(c){
+    var th=document.getElementById('ph-'+c);
+    if(th) th.addEventListener('click',function(){
+      if(_pSort.c===c)_pSort.d*=-1;else{_pSort.c=c;_pSort.d=1;}
+      document.querySelectorAll('[id^="ph-"]').forEach(function(h2){h2.classList.remove('sa','sd');});
+      th.classList.add(_pSort.d===1?'sa':'sd');
+      renderPag();
+    });
+  });
+  // Amm search
+  var aq=document.getElementById('amm-q');
+  if(aq) aq.addEventListener('input',function(){renderAmm(this.value);});
+  // Search
+  var sb=document.getElementById('sb');
+  if(sb) sb.addEventListener('input',function(){
+    var lo=this.value.toLowerCase().trim();
+    if(!lo){renderU(DATA);return;}
+    nav('unita');
+    renderU(DATA.filter(function(r){
+      return r.citta.toLowerCase().indexOf(lo)>=0||r.condominio.toLowerCase().indexOf(lo)>=0||
+        (r.inquilino||'').toLowerCase().indexOf(lo)>=0||(r.amm.nome||'').toLowerCase().indexOf(lo)>=0||
+        (r.info||'').toLowerCase().indexOf(lo)>=0;
+    }));
+  });
+  // Drawer
+  $on('overlay',closeDrw); $on('d-close',closeDrw);
+  // Import
+  initImport();
+  // Init deferred to login/supabase boot
+  // refreshAll() called by loadFromSupabase()
+});
+
+// ================================================================
+// LOGIN CON PASSWORD + BOOT SEQUENCE
+// ================================================================
+
+// Password di accesso — cambiala qui per tutti i colleghi
+var APP_PASSWORDS = ['cassa2026', 'notariato2026', 'patrimonio2026'];
+// Ogni collega può usare una delle password sopra.
+// Per cambiare password: modifica questo array e ricarica il file su GitHub.
+
+var SESSION_KEY = 'cpn_session_v1';
+
+function checkLogin() {
+  var session = sessionStorage.getItem(SESSION_KEY);
+  if (session === 'ok') {
+    showApp();
+    return;
+  }
+  showLogin();
+}
+
+function showLogin() {
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app-shell').style.display = 'none';
+  document.getElementById('login-pwd').focus();
+}
+
+function showApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-shell').style.display = 'flex';
+}
+
+function doLogin() {
+  var pwd = document.getElementById('login-pwd').value;
+  if (APP_PASSWORDS.indexOf(pwd) >= 0) {
+    sessionStorage.setItem(SESSION_KEY, 'ok');
+    showApp();
+    applySupabasePatches();
+    loadFromSupabase();
+  } else {
+    document.getElementById('login-err').style.display = 'block';
+    document.getElementById('login-pwd').value = '';
+    document.getElementById('login-pwd').focus();
+    setTimeout(function() {
+      document.getElementById('login-err').style.display = 'none';
+    }, 3000);
+  }
+}
+
+function doLogout() {
+  sessionStorage.removeItem(SESSION_KEY);
+  showLogin();
+}
+
+window.addEventListener('DOMContentLoaded', function() {
+  // Login form
+  document.getElementById('login-btn').addEventListener('click', doLogin);
+  document.getElementById('login-pwd').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') doLogin();
+  });
+  // Logout button
+  var lb = document.getElementById('btn-logout');
+  if (lb) lb.addEventListener('click', doLogout);
+  // Check session
+  checkLogin();
+});
+
+</script>
+</body>
+</html>
